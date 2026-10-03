@@ -117,7 +117,7 @@ def main():
     release.mkdir(parents=True)
     for package in packages:
         shutil.copy2(package, release)
-    shutil.copy2(ROOT / 'vendor/zelda3/LICENSE', release / 'engine-LICENSE.txt')
+    shutil.copy2(ROOT / 'vendor/zelda3/LICENSE.txt', release / 'engine-LICENSE.txt')
     for name in ('chinese-font-notice.txt', 'chinese-font-OFL.txt'):
         (release / name).write_bytes(expected[name])
     metadata = {

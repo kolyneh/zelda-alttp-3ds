@@ -36,6 +36,6 @@ functions=['Text_DecodeCmd','Text_FilterPlayerNameCharacters','Text_WritePlayerN
 code=preamble+constants+''.join(function(util,x) for x in ['ReadLe16','ReadLe32','FindIndexInMemblk'])+''.join(function(source,x) for x in functions)+(ROOT/'platform/3ds/tests/chinese_text_test.c').read_text()
 with tempfile.TemporaryDirectory() as t:
     path=Path(t)/'test.c';path.write_text(code);(ROOT/'build-3ds/chinese_text_fixture.c').write_text(code);exe=Path(t)/'test'
-    subprocess.run(['cc','-std=c11','-g','-fsanitize=address,undefined','-fno-omit-frame-pointer','-I',str(ENGINE),str(path),'-o',str(exe)],check=True)
+    subprocess.run(['cc','-std=c11','-g','-fsanitize=address,undefined','-fno-omit-frame-pointer','-iquote',str(ENGINE),str(path),'-o',str(exe)],check=True)
     import os
     subprocess.run([str(exe), str(ROOT/'build-3ds/chinese/zelda3_cn.pack')],check=True,env={**os.environ,"UBSAN_OPTIONS":"halt_on_error=1"})
