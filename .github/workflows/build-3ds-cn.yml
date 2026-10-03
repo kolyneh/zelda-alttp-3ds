@@ -23,7 +23,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential clang libjansson-dev libcurl4-openssl-dev libssl-dev python3-venv
           python3 -m venv build-3ds/host-venv
-          build-3ds/host-venv/bin/pip install Pillow==12.3.0
+          build-3ds/host-venv/bin/pip install Pillow==12.3.0 fonttools==4.61.1
       - name: Prepare and test pinned engine and Chinese resources
         run: |
           set -euo pipefail
@@ -70,7 +70,7 @@ jobs:
       - name: Install build host dependencies
         run: |
           apt-get update
-          apt-get install -y autoconf automake libtool pkg-config python3-pil
+          apt-get install -y autoconf automake libtool pkg-config python3-pil python3-fonttools
       - name: Fetch verified tools and build updater libraries
         shell: bash
         run: |
@@ -85,14 +85,14 @@ jobs:
         run: |
           set -euo pipefail
           bash platform/3ds/build.sh 2>&1 | tee build-3ds/logs/game-build.log
-          test -s build-3ds/game/zelda3-3ds-v3.2.1.3dsx
-          test -s build-3ds/game/zelda3-3ds-v3.2.1.cia
+          test -s build-3ds/game/zelda3-3ds-v3.2.2.3dsx
+          test -s build-3ds/game/zelda3-3ds-v3.2.2.cia
       - name: Verify and stage distributable artifacts
         run: python3 tools/3ds/package_release.py
       - name: Upload verified packages
         uses: actions/upload-artifact@v4
         with:
-          name: zelda3-3ds-v3.2.1-cn
+          name: zelda3-3ds-v3.2.2-cn
           path: build-3ds/release
           if-no-files-found: error
       - name: Preserve cross-build logs

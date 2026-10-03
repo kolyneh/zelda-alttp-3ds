@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(zelda3_3ds VERSION 3.2.1 LANGUAGES C)
+project(zelda3_3ds VERSION 3.2.2 LANGUAGES C)
 
 set(ZELDA3_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
 set(ZELDA3_ENGINE_ROOT "${ZELDA3_ROOT}/build-3ds/engine" CACHE PATH "Prepared pinned sxunix engine")
@@ -66,7 +66,7 @@ target_include_directories(zelda3-3ds PRIVATE
 
 target_compile_definitions(zelda3-3ds PRIVATE
   SYSTEM_VOLUME_MIXER_AVAILABLE=0
-  ZELDA3_3DS_VERSION=\"3.2.1\"
+  ZELDA3_3DS_VERSION=\"3.2.2\"
   NDEBUG=1
 )
 
@@ -124,7 +124,7 @@ if(NOT EXISTS "${ZELDA3_CHINESE_PACK}")
   message(FATAL_ERROR "Generate the Chinese increment first: python3 tools/3ds/build_cn_pack.py")
 endif()
 configure_file("${ZELDA3_CHINESE_PACK}" "${ZELDA3_ROMFS}/zelda3_cn.pack" COPYONLY)
-configure_file("${ZELDA3_ROOT}/vendor/zelda3/tables/FONT_LICENSE" "${ZELDA3_ROMFS}/chinese-font-notice.txt" COPYONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/fonts/NOTICE.txt" "${ZELDA3_ROMFS}/chinese-font-notice.txt" COPYONLY)
 configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/chinese-font-OFL.txt" "${ZELDA3_ROMFS}/chinese-font-OFL.txt" COPYONLY)
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/update-ca.pem" "${ZELDA3_ROMFS}/update-ca.pem" COPYONLY)
@@ -139,7 +139,7 @@ ctr_generate_smdh(
 
 ctr_create_3dsx(zelda3-3ds-3dsx
   TARGET zelda3-3ds
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds-v3.2.1.3dsx"
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds-v3.2.2.3dsx"
   SMDH "${ZELDA3_SMDH}"
   ROMFS "${ZELDA3_ROMFS}"
 )

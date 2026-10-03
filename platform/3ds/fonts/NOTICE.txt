@@ -1,0 +1,15 @@
+Fusion Pixel Font 12px monospaced, Simplified Chinese (zh_hans)
+Release: 2026.09.25
+Source: https://github.com/TakWolf/fusion-pixel-font/releases/tag/2026.09.25
+Archive: fusion-pixel-font-12px-monospaced-otf.woff-v2026.09.25.zip
+Archive SHA-256: 996c8eafd6ae9b9ada7e993aa092d5ff557a408f55955bb47ec99d99f869e77c
+File: fusion-pixel-12px-monospaced-zh_hans.otf.woff (unmodified upstream WOFF)
+File SHA-256: 478f35c9be4bd2f527c6b35d789a6fcbb7f85f7dfa4f5a54d61ff0f10bdce37e
+
+Copyright (c) 2022, TakWolf (https://takwolf.com).
+Licensed under the SIL Open Font License, Version 1.1.
+Upstream components: Ark Pixel Font, Cubic 11, Galmuri.
+Full copyright notices and licenses are included as chinese-font-OFL.txt.
+During the build FontTools decompresses WOFF to temporary OTF for Pillow;
+this preserves the glyphs, metrics and names. The 3DS bitmap is generated
+from this font; dialogue character order comes from the pinned sxunix engine.

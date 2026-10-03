@@ -3,11 +3,11 @@
 本 fork 固定使用 [sxunix/zelda3](https://github.com/sxunix/zelda3) 的
 `eb61ac5e5224580b126d00203dfd2da2ede022d1`，通过可重复应用的补丁保留
 EstebanPdN 3DS 移植版的双屏、地图、触控、存档及 Old/New 3DS 渲染适配。
-版本为 `3.2.1`。中文范围是游戏对白；设置界面沿用原版。
+版本为 `3.2.2`。中文范围是游戏对白；设置界面沿用原版。
 
 ## 安装和升级
 
-1. 安装 `zelda3-3ds-v3.2.1.cia`，或用 Homebrew Launcher 启动同名 `.3dsx`。
+1. 安装 `zelda3-3ds-v3.2.2.cia`，或用 Homebrew Launcher 启动同名 `.3dsx`。
 2. 将自己提供的标准 **USA、无 copier header** ROM 放入
    `sdmc:/3ds/Zelda 3DS/`。推荐命名 `zelda3.sfc`，也接受其他 `.sfc` / `.smc` 名称。
 3. 首次启动选择该 ROM，按 A 进行本地资源提取。程序会自动合并中文对白和字体，
@@ -20,7 +20,7 @@ CIA 沿用 `0004000005a13e00`，会覆盖相同身份的已有安装。更新前
 
 更新器从 [kolyneh/zelda-alttp-3ds 的 releases](https://github.com/kolyneh/zelda-alttp-3ds/releases)
 读取 Stable / Pre-release。空发布频道正常显示无可用版本。构建产物可从此仓库
-Actions 的 `zelda3-3ds-v3.2.1-cn` artifact 下载；artifact 不是正式发布。
+Actions 的 `zelda3-3ds-v3.2.2-cn` artifact 下载；artifact 不是正式发布。
 
 ## 中文和英文切换
 
@@ -56,7 +56,7 @@ Language = cn
 
 ## 构建
 
-需要 Python 3 + Pillow、devkitARM/libctru/3ds-cmake、CMake 和宿主构建工具。
+需要 Python 3 + Pillow + FontTools、devkitARM/libctru/3ds-cmake、CMake 和宿主构建工具。
 CI 使用锁定摘要的 devkitPro 镜像以及校验过 SHA-256 的工具和依赖源码。
 以下工具准备命令面向 Linux x86_64 宿主：
 
@@ -80,11 +80,14 @@ CI 和中文载荷生成不读取 ROM，分发包不含 ROM 或完整游戏资�
 
 - 中文使用 sxunix 提供的 397 条对白、1118 个汉字及 16 个中文标点。
 - 字体来源与版权见包内 `chinese-font-notice.txt`；完整 SIL OFL 见 `chinese-font-OFL.txt`。
-- 为适配 13 像素汉字宽度，字形按墨迹左对齐，35 个较宽字形用最近邻缩窄。
+- 为适配 13 像素汉字宽度，字形按墨迹左对齐，超宽字形用最近邻缩窄。
   两条过长对白只调整换行控制，文字保持原样。
-- 主机测试覆盖所有对白的编码往返、实际引擎解码/姓名与数值替换、首末字形像素、
+- v3.2.2 使用Fusion Pixel 2026.09.25 补全字体，修复旧字体缺少 35 个字的问题，
+  包括开场中的“杀”“纵”“即”。构建先检查全部字形映射，缺字时停止打包。
+  升级后启动会自动刷新旧 profile 的中文字库，无需重新提取 ROM。
+- 主机测试覆盖全部字形映射、开场缺字回归、所有对白的编码往返、实际引擎解码/姓名与数值替换、首末字形像素、
   损坏输入、资产迁移、文件操作失败恢复、英文回退、更新校验及 PPU 回归。
-- 主机上的存档与重启测试使用合成数据。当前没有用户 ROM 或设备运行证据；
+- 主机上的存档与重启测试使用合成数据。用户已在设备上启动中文版本并报告开场缺字；修复版仍需设备复测。
   开场、长对白、选项、保存重启和 Old/New 3DS 真机表现仍需实际运行验证。
 
 3DS 原作者及已有贡献者署名保留。引擎、SDL2、更新依赖和字体许可证随分发包提供。

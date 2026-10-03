@@ -9,7 +9,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 TITLE_ID = 0x0004000005A13E00
-VERSION = '3.2.1'
+VERSION = '3.2.2'
 ALLOWED = {'zelda3_assets.bps', 'zelda3.ini', 'zelda3_cn.pack',
            'chinese-font-notice.txt', 'chinese-font-OFL.txt', 'update-ca.pem'}
 RELEASE_LICENSES = {

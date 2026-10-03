@@ -39,8 +39,14 @@ At runtime, reuse the user's extracted 4096-byte US tile region and first
 95 US widths. Replace punctuation tiles and append CJK tiles/widths. This
 increment contains no US font, US dialogue, ROM or full game asset package.
 
-Translation and font input come from the pinned sxunix dependency. The Ark
-Pixel font is licensed under SIL OFL 1.1; ship `tables/FONT_LICENSE` with it.
+Translation comes from the pinned sxunix dependency. Font input is Fusion
+Pixel 12px monospaced zh_hans WOFF, release 2026.09.25, in
+`platform/3ds/fonts/`. Its SHA-256 is pinned in the builder. FontTools
+decompresses it to a temporary OTF for Pillow. Before rendering, FontTools
+verifies all 1134 characters map to nonzero glyph IDs. This rejects the old
+vendor subset, which omitted 35 required CJK characters. Ship
+`fonts/NOTICE.txt` and the full Fusion Pixel and component licenses with the
+generated bitmap.
 
 ## Text layout
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a ROM-free Chinese dialogue/font increment from pinned sxunix."""
 import argparse
+import hashlib
 import importlib.util
 from pathlib import Path
 import runpy
@@ -11,6 +12,19 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 MAGIC = b'Z3CNPK1\0'
+FONT_PATH = ROOT / 'platform/3ds/fonts/fusion-pixel-12px-monospaced-zh_hans.otf.woff'
+FONT_SHA256 = '478f35c9be4bd2f527c6b35d789a6fcbb7f85f7dfa4f5a54d61ff0f10bdce37e'
+
+
+def validate_font(path, characters):
+    """Reject unmapped characters before Pillow substitutes .notdef boxes."""
+    from fontTools.ttLib import TTFont
+    with TTFont(path) as font:
+        cmap = font.getBestCmap() or {}
+        missing = [char for char in characters
+                   if ord(char) not in cmap or font.getGlyphID(cmap[ord(char)]) == 0]
+    if missing:
+        raise ValueError('Chinese font is missing glyphs: ' + ''.join(missing))
 
 # Keep the pinned translation intact while fitting two authored rows to 168 px.
 LAYOUT_FIXES = {
@@ -108,8 +122,19 @@ def build_pack(engine):
         sys.path[:], sys.dont_write_bytecode = saved_path, saved_bytecode
     if font['CJK_CHARS'] != codec.kLanguages['cn'].cjk_chars:
         raise ValueError('Font and dialogue CJK character orders differ')
+    if hashlib.sha256(FONT_PATH.read_bytes()).hexdigest() != FONT_SHA256:
+        raise ValueError('Chinese font SHA-256 does not match the pinned input')
+    validate_font(FONT_PATH, font['CN_PUNCT'] + font['CJK_CHARS'])
     from PIL import Image
     with tempfile.TemporaryDirectory(prefix='zelda3-cn-font-') as directory:
+        from fontTools.ttLib import TTFont
+        otf = Path(directory) / 'font.otf'
+        with TTFont(FONT_PATH, recalcTimestamp=False) as source:
+            source.flavor = None
+            source.save(otf)
+        # runpy functions retain their own globals; select the validated font
+        # explicitly so the vendor's subset/system fallback cannot be used.
+        font['generate_font_cn'].__globals__['FONT_PATH_PIXEL'] = str(otf)
         png = Path(directory) / 'font_cn.png'
         font['generate_font_cn'](png)
         with Image.open(png) as image:

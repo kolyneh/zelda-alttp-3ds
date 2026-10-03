@@ -139,6 +139,31 @@ class ChinesePackTests(unittest.TestCase):
                     self.assertFalse((tiles[pos] | tiles[pos + 1]) & (1 << (7 - col % 8)),
                                      f'CJK {c}: visible pixels would be clipped at column {col}')
 
+    def test_intro_characters_have_distinct_real_glyphs(self):
+        builder = self.builder()
+        codec, _ = builder.load_dialogue(ENGINE)
+        data = builder.build_pack(ENGINE)
+        words = struct.unpack_from('<12I', data, 8)
+        begin = 56 + sum(words[5:9])
+        glyphs = []
+        for char in '杀纵即':
+            index = codec.kLanguages['cn'].cjk_chars.index(char)
+            glyphs.append(data[begin + index * 64:begin + (index + 1) * 64])
+        self.assertEqual(len(set(glyphs)), 3, 'Intro characters rendered as the same missing-glyph box')
+
+    def test_incomplete_vendor_font_is_rejected(self):
+        builder = self.builder()
+        codec, _ = builder.load_dialogue(ENGINE)
+        with self.assertRaisesRegex(ValueError, 'missing glyphs:.*即.*杀.*纵'):
+            builder.validate_font(ENGINE / 'tables/ark-pixel-12px-zh_cn.otf',
+                                  codec.kLanguages['cn'].cjk_chars)
+
+    def test_complete_font_covers_every_character(self):
+        builder = self.builder()
+        codec, _ = builder.load_dialogue(ENGINE)
+        info = codec.kLanguages['cn']
+        builder.validate_font(builder.FONT_PATH, list(info.alphabet[95:]) + list(info.cjk_chars))
+
 
 if __name__ == '__main__':
     unittest.main()

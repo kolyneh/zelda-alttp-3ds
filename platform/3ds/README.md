@@ -1,6 +1,6 @@
 # Zelda 3DS platform
 
-Native dual-screen Nintendo 3DS frontend, Simplified Chinese fork v3.2.1.
+Native dual-screen Nintendo 3DS frontend, Simplified Chinese fork v3.2.2.
 See [中文安装、升级与语言切换](CHINESE.md).
 
 ## Console installation
@@ -66,7 +66,7 @@ vendored in `app/jni/SDL2`.
 bash platform/3ds/build.sh
 ```
 
-Output: `build-3ds/game/zelda3-3ds-v3.2.1.cia` and `.3dsx`. Packages contain
+Output: `build-3ds/game/zelda3-3ds-v3.2.2.cia` and `.3dsx`. Packages contain
 configuration, the extraction patch, Chinese dialogue/fonts and font licenses.
 They do not contain ROMs or a complete extracted asset file. Follow
 [the Chinese build instructions](CHINESE.md#构建) to prepare pinned dependencies.

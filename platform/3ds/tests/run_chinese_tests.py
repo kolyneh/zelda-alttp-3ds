@@ -98,6 +98,19 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(unpack_table(out[95])[2], b'other font')
         self.assertEqual(len(unpack_table(out[96])), 3)
 
+    def test_font_only_update_refreshes_existing_chinese_cache(self):
+        current = self.apply(self.assets)
+        slots = get_slots(current)
+        fonts = unpack_table(slots[95])
+        tiles, widths = unpack_table(fonts[1])
+        old_tiles = bytearray(tiles)
+        old_tiles[4096] ^= 1
+        fonts[1] = pack_arrays([bytes(old_tiles), widths])
+        slots[95] = pack_arrays(fonts)
+        old = make_assets(slots)
+        self.assertFalse(self.lib.ChineseAssets_IsCurrent(old, len(old), self.pack, len(self.pack)))
+        self.assertEqual(self.apply(old), current)
+
     def test_cn_shared_slots_do_not_replace_us_resources(self):
         slots = get_slots(self.assets)
         slots[96] = pack_arrays([pack_arrays([b'us', b'\0\0\0']),
