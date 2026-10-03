@@ -130,7 +130,9 @@ def main():
         (release / name).write_bytes(expected[name])
     metadata = {
         'version': VERSION, 'title_id': f'{TITLE_ID:016x}',
-        'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'commit': subprocess.check_output(
+            ['git', '-c', 'safe.directory=' + str(ROOT), 'rev-parse', 'HEAD'],
+            cwd=ROOT, text=True).strip(),
         'engine': json.loads((ROOT / 'platform/3ds/engine.lock.json').read_text()),
         'build_tools': json.loads((ROOT / 'platform/3ds/build-tools.lock.json').read_text()),
         'romfs_sha256': {k: hashlib.sha256(v).hexdigest() for k, v in sorted(expected.items())},
