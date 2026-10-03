@@ -15,6 +15,9 @@ static int parse(json_t *r,bool pre,bool hb,UpdateRelease *out) {
  char *s=json_dumps(r,JSON_COMPACT);int result=Update_ParseRelease(s,strlen(s),pre,hb,out);free(s);return result;
 }
 int main(int argc,char **argv) {
+ assert(!strcmp(UPDATE_REPOSITORY,"kolyneh/zelda-alttp-3ds"));
+ assert(Update_AllowedDownloadUrl("https://github.com/kolyneh/zelda-alttp-3ds/releases/download/v3.2.1/zelda3-3ds-v3.2.1.cia"));
+ assert(!Update_AllowedDownloadUrl("https://github.com/EstebanPdN/zelda-alttp-3ds/releases/download/v3.2.1/zelda3-3ds-v3.2.1.cia"));
  assert(Update_IsNewer("v3.1","3.1-E1"));assert(Update_IsNewer("v3.1-E10","3.1-E9"));
  assert(Update_IsNewer("v3.10","3.9"));assert(!Update_IsNewer("v3.1-E99","3.1"));
  assert(!Update_IsNewer("v3.0","3.1-E1"));assert(!Update_IsNewer("v3.1-E1","3.1-E1"));
@@ -38,9 +41,11 @@ int main(int argc,char **argv) {
  json_decref(r);r=make("v3.1",false,false);a=json_array_get(json_object_get(r,"assets"),0);
  json_object_set_new(a,"size",json_integer(UPDATE_MAX_FILE+1));assert(parse(r,false,false,&out)==-1);
  json_decref(r);r=make("v3.1",false,false);json_object_set_new(r,"draft",json_true());assert(parse(r,false,false,&out)==-1);json_decref(r);
- r=json_array();assert(parse(r,true,false,&out)==0);
+ r=json_array();assert(parse(r,true,false,&out)==0 && !out.version[0] && !out.url[0]);
+ assert(parse(r,false,false,&out)==0 && !out.version[0] && !out.url[0]);
  json_array_append_new(r,make("v3.2-E2",true,false));json_array_append_new(r,make("v3.2-E10",true,false));
- json_array_append_new(r,make("v3.3",false,false));assert(parse(r,true,false,&out)==1&&!strcmp(out.version,"v3.2-E10"));json_decref(r);
+ json_array_append_new(r,make("v3.3",false,false));assert(parse(r,true,false,&out)==1&&!strcmp(out.version,"v3.2-E10"));
+ assert(parse(r,false,false,&out)==1&&!strcmp(out.version,"v3.3"));json_decref(r);
  r=make("v3.1",false,true);assert(parse(r,false,true,&out)==1);json_decref(r);
  assert(Update_ParseRelease("{}garbage",9,false,false,&out)==-1);
  assert(Update_ParseRelease("{\"draft\":false,\"draft\":true}",28,false,false,&out)==-1);

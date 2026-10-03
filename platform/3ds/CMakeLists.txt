@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(zelda3_3ds VERSION 3.2 LANGUAGES C)
+project(zelda3_3ds VERSION 3.2.2 LANGUAGES C)
 
 set(ZELDA3_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
-set(ZELDA3_NATIVE "${ZELDA3_ROOT}/app/jni/src")
+set(ZELDA3_ENGINE_ROOT "${ZELDA3_ROOT}/build-3ds/engine" CACHE PATH "Prepared pinned sxunix engine")
+if(NOT EXISTS "${ZELDA3_ENGINE_ROOT}/.engine-origin.json")
+  message(FATAL_ERROR "Prepare the sxunix dependency first: python3 tools/3ds/prepare_engine.py")
+endif()
+set(ZELDA3_NATIVE "${ZELDA3_ENGINE_ROOT}")
 set(SDL2_ROOT "" CACHE PATH "Local SDL2 installation built for Nintendo 3DS")
 
 if(NOT SDL2_ROOT)
@@ -30,6 +34,8 @@ set(ZELDA3_3DS_SOURCES
   "${ZELDA3_NATIVE}/src/platform/linux/second_screen_sdl.c"
   "${ZELDA3_NATIVE}/third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/platform_3ds.c"
+  "${CMAKE_CURRENT_LIST_DIR}/source/chinese_assets.c"
+  "${CMAKE_CURRENT_LIST_DIR}/source/chinese_profile.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/apt_responsiveness.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/updater.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/update_manifest.c"
@@ -60,7 +66,7 @@ target_include_directories(zelda3-3ds PRIVATE
 
 target_compile_definitions(zelda3-3ds PRIVATE
   SYSTEM_VOLUME_MIXER_AVAILABLE=0
-  ZELDA3_3DS_VERSION=\"3.2\"
+  ZELDA3_3DS_VERSION=\"3.2.2\"
   NDEBUG=1
 )
 
@@ -80,19 +86,22 @@ target_compile_options(zelda3-3ds PRIVATE
 target_link_options(zelda3-3ds PRIVATE -O3 -flto -Wl,--gc-sections -Wl,--wrap=GSPGPU_SetLcdForceBlack -Wl,--wrap=aptInit -Wl,--wrap=threadCreate)
 
 set(UPDATE_DEPS_ROOT "$ENV{DEVKITPRO}/portlibs/3ds" CACHE PATH "3DS curl, mbedTLS and Jansson prefix")
-target_include_directories(zelda3-3ds PRIVATE "${UPDATE_DEPS_ROOT}/include")
-target_link_directories(zelda3-3ds PRIVATE "${UPDATE_DEPS_ROOT}/lib")
+target_include_directories(zelda3-3ds BEFORE PRIVATE "${UPDATE_DEPS_ROOT}/include")
+foreach(LIBRARY curl jansson mbedtls mbedx509 mbedcrypto)
+  find_library(ZELDA3_${LIBRARY}_LIBRARY NAMES ${LIBRARY}
+    PATHS "${UPDATE_DEPS_ROOT}/lib" NO_DEFAULT_PATH REQUIRED)
+endforeach()
 target_link_libraries(zelda3-3ds PRIVATE
   SDL2::SDL2main
   SDL2::SDL2-static
   alttp_pica_shader_bin
   citro2d
   citro3d
-  curl
-  jansson
-  mbedtls
-  mbedx509
-  mbedcrypto
+  ${ZELDA3_curl_LIBRARY}
+  ${ZELDA3_jansson_LIBRARY}
+  ${ZELDA3_mbedtls_LIBRARY}
+  ${ZELDA3_mbedx509_LIBRARY}
+  ${ZELDA3_mbedcrypto_LIBRARY}
   ctru
   m
 )
@@ -110,19 +119,27 @@ configure_file(
   COPYONLY
 )
 
+set(ZELDA3_CHINESE_PACK "${ZELDA3_ROOT}/build-3ds/chinese/zelda3_cn.pack" CACHE FILEPATH "Generated ROM-free Chinese increment")
+if(NOT EXISTS "${ZELDA3_CHINESE_PACK}")
+  message(FATAL_ERROR "Generate the Chinese increment first: python3 tools/3ds/build_cn_pack.py")
+endif()
+configure_file("${ZELDA3_CHINESE_PACK}" "${ZELDA3_ROMFS}/zelda3_cn.pack" COPYONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/fonts/NOTICE.txt" "${ZELDA3_ROMFS}/chinese-font-notice.txt" COPYONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/chinese-font-OFL.txt" "${ZELDA3_ROMFS}/chinese-font-OFL.txt" COPYONLY)
+
 configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/update-ca.pem" "${ZELDA3_ROMFS}/update-ca.pem" COPYONLY)
 set(ZELDA3_SMDH "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds.smdh")
 ctr_generate_smdh(
   OUTPUT "${ZELDA3_SMDH}"
   NAME "The Legend of Zelda"
-  DESCRIPTION "A Link to the Past 3DS port"
-  AUTHOR "EstebanPdN"
+  DESCRIPTION "A Link to the Past - Simplified Chinese fork"
+  AUTHOR "EstebanPdN / kolyneh"
   ICON "${CMAKE_CURRENT_LIST_DIR}/assets/icon.png"
 )
 
 ctr_create_3dsx(zelda3-3ds-3dsx
   TARGET zelda3-3ds
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds-v3.2.3dsx"
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds-v3.2.2.3dsx"
   SMDH "${ZELDA3_SMDH}"
   ROMFS "${ZELDA3_ROMFS}"
 )

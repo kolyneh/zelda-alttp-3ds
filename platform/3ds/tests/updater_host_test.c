@@ -1,5 +1,8 @@
 // Host I/O harness: real transfer/hash/control flow, fake console install service.
 #include <assert.h>
+#include <stdbool.h>
+static bool test_release_response(const char *, void *);
+#define ZELDA3_UPDATE_FETCH_HOOK test_release_response
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -10,6 +13,14 @@ static int test_sd_close(FILE *file);
 #include "updater.c"
 #undef write
 #undef fclose
+static const char *mock_release_list;
+static bool test_release_response(const char *url, void *context) {
+  if (!mock_release_list) return false;
+  assert(!strcmp(url,"https://api.github.com/repos/kolyneh/zelda-alttp-3ds/releases?per_page=100"));
+  Transfer *t=context;
+  assert(receive((void *)mock_release_list,1,strlen(mock_release_list),t)==strlen(mock_release_list));
+  return true;
+}
 static unsigned sd_writes;
 static bool fail_sd_write, fail_sd_close;
 static ssize_t test_sd_write(int fd, const void *data, size_t size) {
@@ -55,6 +66,9 @@ static void test_buffered_download(void) {
     assert(status.progress!=100);
     free(t.data);fail_sd_write=false;fail_sd_close=false;cancel=false;
   }
+  t=(Transfer){.expected=sizeof(payload)};assert(open_download(&t));
+  assert(receive(payload,1,sizeof(payload)-1,&t)==sizeof(payload)-1);
+  assert(!close_download(&t,true) && status.progress!=100);free(t.data);
   t=(Transfer){.expected=UPDATE_IO_SIZE};assert(open_download(&t));
   fail_sd_write=true;
   for (unsigned i=0;i<7;i++)assert(receive(payload,1,sizeof(payload),&t)==sizeof(payload));
@@ -97,6 +111,12 @@ int main(int argc,char**argv){
  ac_result=0;soc_result=-2;run_job(NULL);assert(ac_closed==1&&!soc_closed&&!ssl_closed);
  soc_result=0;ssl_result=-3;run_job(NULL);assert(!strcmp(status.message,"TLS SERVICE FAILED")&&ac_closed==2&&soc_closed==1&&!ssl_closed);
  ssl_result=0;
+ // Empty fork releases are a successful check in both channels.
+ mock_release_list="[]";status.prerelease=false;run_job(NULL);
+ assert(status.state==UPDATE_EMPTY && !strcmp(status.message,"NO STABLE RELEASE AVAILABLE"));
+ status.prerelease=true;run_job(NULL);
+ assert(status.state==UPDATE_EMPTY && !strcmp(status.message,"NO PRE-RELEASE AVAILABLE"));
+ mock_release_list=NULL;status.prerelease=false;
  // HTTP/TLS must not be scheduled behind the always-runnable 3D renderer.
  start(false);assert(created_priority==0x2f&&busy);busy=false;
  caller_priority=0x18;start(false);assert(created_priority==0x18);busy=false;
@@ -133,14 +153,17 @@ int main(int argc,char**argv){
    UpdateRelease found;
    assert(Update_ParseRelease(live.data,live.size,true,false,&found)>=0);
    free(live.data);
-   live=(Transfer){0};assert(fetch("https://api.github.com/repos/" UPDATE_REPOSITORY "/releases/latest",&live));
-   assert(Update_ParseRelease(live.data,live.size,false,false,&release)==1);free(live.data);
-   live=(Transfer){.expected=release.size};assert(open_download(&live));
-   assert(fetch(release.url,&live));assert(close_download(&live,true));free(live.data);assert(verify_file());
+   live=(Transfer){0};assert(fetch("https://api.github.com/repos/" UPDATE_REPOSITORY "/releases?per_page=100",&live));
+   int stable=Update_ParseRelease(live.data,live.size,false,false,&release);assert(stable>=0);free(live.data);
+   if(stable) {
+     live=(Transfer){.expected=release.size};assert(open_download(&live));
+     assert(fetch(release.url,&live));assert(close_download(&live,true));free(live.data);assert(verify_file());
+   }
    curl_global_cleanup();
    status.prerelease=false;download_job=false;
+   unsigned before_ssl=ssl_closed,before_soc=soc_closed,before_ac=ac_closed;
    run_job(NULL);assert(status.state==UPDATE_CURRENT||status.state==UPDATE_AVAILABLE||status.state==UPDATE_EMPTY);
-   assert(ssl_closed==1&&soc_closed==2&&ac_closed==3&&!busy);
+   assert(ssl_closed==before_ssl+1&&soc_closed==before_soc+1&&ac_closed==before_ac+1&&!busy);
    puts("PASS: live GitHub HTTPS with bundled CA, and both release channels");
  }
  puts("PASS: bounded transfer/SHA256; corruption/truncation/cancel/size; title/space/short-write/commit guards. AM is mocked, not console-tested.");

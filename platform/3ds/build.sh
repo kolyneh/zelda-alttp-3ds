@@ -11,6 +11,10 @@ TOOLS_ROOT="${ZELDA3_TOOLS_ROOT:-${ROOT}/../../Tools/bin}"
 
 export DEVKITPRO DEVKITARM
 
+PYTHON="${PYTHON:-python3}"
+"${PYTHON}" "${ROOT}/tools/3ds/prepare_engine.py"
+"${PYTHON}" "${ROOT}/tools/3ds/build_cn_pack.py"
+
 if [[ ! -f "${SDL_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" ]]; then
   cmake \
     -S "${ROOT}/app/jni/SDL2" \
@@ -33,6 +37,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DSDL2_ROOT="${SDL_PREFIX}" \
   -DSDL2_DIR="${SDL_PREFIX}/lib/cmake/SDL2" \
+  -DZELDA3_ENGINE_ROOT="${ROOT}/build-3ds/engine" \
   -DUPDATE_DEPS_ROOT="${UPDATE_DEPS_ROOT:-${DEVKITPRO}/portlibs/3ds}"
 cmake --build "${GAME_BUILD}" --parallel
 
@@ -45,8 +50,8 @@ fi
 
 "${BANNERTOOL}" makesmdh \
   -s "The Legend of Zelda" \
-  -l "A Link to the Past 3DS port" \
-  -p "EstebanPdN" \
+  -l "A Link to the Past - Simplified Chinese fork" \
+  -p "EstebanPdN / kolyneh" \
   -i "${ROOT}/platform/3ds/assets/icon.png" \
   -f visible,nosavebackups \
   -o "${GAME_BUILD}/zelda3-3ds.icn"
@@ -60,7 +65,7 @@ fi
   cd "${ROOT}"
   "${MAKEROM}" \
     -f cia \
-    -o "${GAME_BUILD}/zelda3-3ds-v3.2.cia" \
+    -o "${GAME_BUILD}/zelda3-3ds-v3.2.2.cia" \
     -DAPP_ROMFS=build-3ds/game/romfs \
     -rsf platform/3ds/cia/zelda3.rsf \
     -target t \
@@ -71,5 +76,5 @@ fi
 )
 
 printf 'Listos:\n'
-printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.3dsx"
-printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.cia"
+printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.2.3dsx"
+printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.2.cia"

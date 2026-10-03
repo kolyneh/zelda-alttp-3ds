@@ -1,6 +1,7 @@
 # Zelda 3DS platform
 
-Native dual-screen Nintendo 3DS frontend, public v3.0.
+Native dual-screen Nintendo 3DS frontend, Simplified Chinese fork v3.2.2.
+See [中文安装、升级与语言切换](CHINESE.md).
 
 ## Console installation
 
@@ -65,15 +66,17 @@ vendored in `app/jni/SDL2`.
 bash platform/3ds/build.sh
 ```
 
-Output: `build-3ds/game/zelda3-3ds-v3.0.cia` and `.3dsx`. Packages contain
-configuration and the extraction patch, never ROMs or extracted game assets.
+Output: `build-3ds/game/zelda3-3ds-v3.2.2.cia` and `.3dsx`. Packages contain
+configuration, the extraction patch, Chinese dialogue/fonts and font licenses.
+They do not contain ROMs or a complete extracted asset file. Follow
+[the Chinese build instructions](CHINESE.md#构建) to prepare pinned dependencies.
 
 HOME Menu metadata:
 
 ```text
 Short name:  The Legend of Zelda
-Long name:   A Link to the Past 3DS port
-Author:      EstebanPdN
+Long name:   A Link to the Past - Simplified Chinese fork
+Author:      EstebanPdN / kolyneh
 ProductCode: CTR-P-Z3DE
 UniqueId:    0x5A13E
 ```
@@ -89,9 +92,8 @@ read its changelog on the top screen, with Prev/Next below for more pages.
 Choose Download Update and confirm installation, then reopen the game.
 Save in-game before installing. Startup checks also indicate newer releases.
 
-Version [v3.2](https://github.com/EstebanPdN/zelda-alttp-3ds/releases/tag/v3.2)
-is the latest stable release. Select the Stable channel to install it. It fixes Restart retaining stale game RAM after ROM
-reselection, which could leave gameplay black and silent.
+The update feed is `kolyneh/zelda-alttp-3ds`. Empty channels show no available
+release. Existing download size, SHA-256, HTTPS and CIA identity checks remain.
 
 Settings is Screen, Turbo Speed, Developer, Update, Restart. Restart opens
 the ROM selector and starts the selected ROM fresh; existing saves remain.

@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/sxunix/zelda3.git",
+  "commit": "eb61ac5e5224580b126d00203dfd2da2ede022d1",
+  "port_base": "b793a4bf2a2eec09a3d79ee497bf5813f45c9f1e",
+  "patches": [
+    {
+      "path": "platform/3ds/patches/sxunix-3ds.patch",
+      "sha256": "5cc1424419988905a7b2ab82cb0dda8c9d2c81eeb66045247f4027f758055022"
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 build/
 build-3ds/
 .DS_Store
+__pycache__/
 
 # Release staging/output folders. Public artifacts belong on GitHub Releases,
 # not in the source tree.

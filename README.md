@@ -1,4 +1,9 @@
-# Zelda A Link to the Past 3DS
+# Zelda A Link to the Past 3DS — 简体中文 fork
+
+This fork pins the sxunix engine and includes Simplified Chinese dialogue and
+fonts. See [中文安装、升级与语言切换](platform/3ds/CHINESE.md) for setup and
+the current validation limits. Game dialogue defaults to Chinese; settings
+retain the existing interface.
 
 <img width="1672" height="941" alt="alttp" src="https://github.com/user-attachments/assets/6fc340f1-7d18-4e75-9a1a-bf8986d490dc" />
 
@@ -7,6 +12,7 @@ Nintendo 3DS dual-screen port of Zelda3, built with help from Codex.
 This project is based on open-source work from:
 
 - Original reverse-engineered Zelda3 engine: https://github.com/snesrev/zelda3
+- Pinned Chinese engine dependency: https://github.com/sxunix/zelda3
 - Android port base: https://github.com/Waterdish/zelda3-android
 - Dual-screen Android branch used as the 3DS source base:
   https://github.com/samyost1/zelda3-android
@@ -61,9 +67,8 @@ Place a legally obtained USA, unheadered ROM there. The preferred filename is
 On first launch, press A to validate the ROM and extract the assets. The ROM is
 read locally and is never copied into the CIA.
 
-If you’re using a translated/patched ROM, put both the clean USA ROM and the patched ROM in `sdmc:/3ds/Zelda 3DS/`.
-
-The port should use the clean ROM for the original assets and the patched ROM for the translated text. Translation patches may work this way, but gameplay hacks are not guaranteed to be compatible.
+For this fork's Chinese dialogue, select the clean USA ROM. The bundled Chinese
+increment is merged locally after extraction; a Chinese patched ROM is not required.
 
 Audio requires:
 
@@ -76,17 +81,9 @@ Luma3DS can create this file from the console's own firmware through Rosalina's
 
 ## Releases
 
-Every GitHub release includes:
-
-- installable CIA
-- Homebrew Launcher 3DSX
-- QR code for scanning the CIA URL from FBI on a 3DS
-
-GitHub supplies automatic source-code archives for each tag.
-The release page shows the QR code, a short changelog and bug-report instructions.
-Detailed development notes are preserved inside the source snapshot.
-
-Latest release: [v3.0](https://github.com/EstebanPdN/zelda-alttp-3ds/releases/tag/v3.0)
+Fork releases are listed at [kolyneh/zelda-alttp-3ds](https://github.com/kolyneh/zelda-alttp-3ds/releases).
+The build workflow uploads verified CIA/3DSX packages, licenses and checksums as
+Actions artifacts. A successful build does not imply device runtime validation.
 
 See [CHANGELOG.md](CHANGELOG.md) for the changes since v2.8.
 
@@ -102,23 +99,26 @@ Requirements:
 
 - devkitARM, libctru and 3ds-cmake under `DEVKITPRO`
 - `makerom` and `bannertool` for CIA packaging
-- the vendored SDL2 source in `app/jni/SDL2`
+- Python 3 and Pillow for the standalone Chinese resource pack
+- the pinned `vendor/zelda3` submodule and vendored SDL2 source in `app/jni/SDL2`
 - `banner.cgfx` is prebuilt in `platform/3ds/assets`; it was generated from
   the supplied 2.0 Blender logo model.
 
 Build:
 
 ```sh
-chmod +x platform/3ds/build.sh
-platform/3ds/build.sh
+git submodule update --init --recursive
+bash platform/3ds/build.sh
 ```
 
-The script builds the 3DSX and CIA under `build-3ds/game/`.
+The script builds the 3DSX and CIA under `build-3ds/game/`. See
+[CHINESE.md](platform/3ds/CHINESE.md#构建) for the pinned updater-library and
+packaging-tool preparation used by CI.
 
 ## License and legal notice
 
 The Zelda3 engine retains the **MIT license** and copyright notices in
-[app/jni/src/LICENSE.txt](app/jni/src/LICENSE.txt), which also contains the Opus notice.
+[vendor/zelda3/LICENSE.txt](vendor/zelda3/LICENSE.txt), which also contains the Opus notice.
 SDL2, SDL2_mixer and other dependencies retain their own licenses. These
 component licenses do not grant rights to Nintendo game content.
 
@@ -147,10 +147,9 @@ read its changelog on the top screen, with Prev/Next below for more pages.
 Choose Download Update and confirm installation, then reopen the game.
 Save in-game before installing. Startup checks also indicate newer releases.
 
-Version [v3.2](https://github.com/EstebanPdN/zelda-alttp-3ds/releases/tag/v3.2)
-is the latest stable release. Select the Stable channel to install it. It fixes Restart retaining stale game RAM after ROM
-reselection, which could leave gameplay black and silent. It also batches updater
-SD transfers and prevents downloads from being starved by rendering.
+Updates use this fork's release feed. An empty Stable or Pre-release channel
+shows no available release. The version in this branch is 3.2.1; CIA identity
+and per-ROM profile paths match the original port.
 
 Settings is Screen, Turbo Speed, Developer, Update, Restart. Restart opens
 the ROM selector and starts the selected ROM fresh; existing saves remain.

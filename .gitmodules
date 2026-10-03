@@ -1,0 +1,3 @@
+[submodule "vendor/zelda3"]
+	path = vendor/zelda3
+	url = https://github.com/sxunix/zelda3.git

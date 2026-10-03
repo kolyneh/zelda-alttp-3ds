@@ -1,4 +1,5 @@
 #include "platform_3ds.h"
+#include "chinese_profile.h"
 #include "updater.h"
 #include "update_view.h"
 extern bool SS_RenderLetterSheet(uint32_t *pixels);
@@ -41,6 +42,7 @@ static const char kAssetsFilename[] = "zelda3_assets.dat";
 static const char kTemporaryAssetsFilename[] = "zelda3_assets.tmp";
 static const char kBundledPatch[] = "romfs:/zelda3_assets.bps";
 static const char kBundledConfig[] = "romfs:/zelda3.ini";
+static const char kBundledChinesePack[] = "romfs:/zelda3_cn.pack";
 
 static enum Platform3DSDisplayMode g_display_mode =
   kPlatform3DSDisplayOriginal;
@@ -3264,6 +3266,24 @@ static bool MigrateWideDefaults(const char *ini) {
   return true;
 }
 
+static void LogProfileLanguage(const char *ini) {
+  FILE *file = fopen(ini, "rb");
+  if (!file) return;
+  char line[1024], language[32] = "us"; bool general = false;
+  while (fgets(line, sizeof(line), file)) {
+    char *text = Trim(line);
+    if (*text == '[') general = !strcasecmp(text, "[General]");
+    char *equals = strchr(text, '=');
+    if (general && equals) {
+      *equals = 0;
+      if (!strcasecmp(Trim(text), "Language"))
+        snprintf(language, sizeof(language), "%s", Trim(equals + 1));
+    }
+  }
+  fclose(file);
+  LogSetup("Profile language: %s", language[0] ? language : "us");
+}
+
 static bool EnsureProfileReady(RomEntry *rom, bool force_extract) {
   g_profile_prepare_status = "ROM preparation failed";
   LogSetup("Preparing profile: %s, ROM: %s", rom->profile, rom->filename);
@@ -3272,6 +3292,12 @@ static bool EnsureProfileReady(RomEntry *rom, bool force_extract) {
   char profile_assets[512], profile_ini[512];
   snprintf(profile_assets,sizeof(profile_assets),"%s/%s",rom->profile,kAssetsFilename);
   snprintf(profile_ini,sizeof(profile_ini),"%s/zelda3.ini",rom->profile);
+  char chinese_error[256];
+  if (!ChineseProfile_RecoverFile(profile_assets, chinese_error, sizeof(chinese_error)) ||
+      !ChineseProfile_RecoverFile(profile_ini, chinese_error, sizeof(chinese_error))) {
+    LogSetup("%s", chinese_error);
+    return ProfileSetupFailure("Chinese profile recovery failed", rom->profile);
+  }
   if (!MigrateWideDefaults(profile_ini))
     return false;
   char cwd[512];
@@ -3290,6 +3316,19 @@ static bool EnsureProfileReady(RomEntry *rom, bool force_extract) {
   if (chdir(cwd)!=0)
     return ProfileSetupFailure("SD directory error", cwd);
   if (!ready) return false;
+  // Both successful BPS extraction and cached assets must receive the CN increment.
+  ChineseProfileResult chinese = ChineseProfile_Ensure(
+      profile_assets, kBundledChinesePack, chinese_error, sizeof(chinese_error));
+  if (chinese == CN_PROFILE_ERROR) {
+    LogSetup("%s", chinese_error);
+    return ProfileSetupFailure("Chinese assets migration failed", profile_assets);
+  }
+  if (!ChineseProfile_SetDefaultLanguage(profile_ini, chinese_error, sizeof(chinese_error))) {
+    LogSetup("%s", chinese_error);
+    return ProfileSetupFailure("Chinese settings migration failed", profile_ini);
+  }
+  LogSetup("Chinese profile assets: %s", chinese == CN_PROFILE_UPDATED ? "updated" : "current");
+  LogProfileLanguage(profile_ini);
   if (!CopyFileReplacing(profile_assets, kAssetsFilename))
     return ProfileSetupFailure("SD assets copy error", profile_assets);
   if (!CopyFileReplacing(profile_ini, "zelda3.ini"))

@@ -1,0 +1,19 @@
+{
+  "container": "devkitpro/devkitarm@sha256:116afba8df8453961de2936ffab20dd441edf4d682856c1ec8b0e53d7ed0bbf5",
+  "tools": [
+    {
+      "file": "makerom-v0.18.4.zip",
+      "url": "https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip",
+      "sha256": "dd596854718c195c6e3229286be485b122921715555af8ae5cf8e9a465d9f970",
+      "member": "makerom",
+      "output": "makerom"
+    },
+    {
+      "file": "bannertool.zip",
+      "url": "https://github.com/diasurgical/bannertool/releases/download/1.2.0/bannertool.zip",
+      "sha256": "69768596f836acb3e3aeaa66e47c6ba560dde813c6dfcd33c8afc25fe29b7524",
+      "member": "linux-x86_64/bannertool",
+      "output": "bannertool"
+    }
+  ]
+}

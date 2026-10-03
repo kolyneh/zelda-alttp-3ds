@@ -19,6 +19,7 @@ code=r'''
 #include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
+#include "chinese_profile.h"
 static int renames, extract_calls, selected_writes;
 static int sd_rename(const char *from,const char *to) {
  renames++;
@@ -32,14 +33,17 @@ static int sd_rename(const char *from,const char *to) {
 #define rename sd_rename
 #define LogSetup(...) ((void)0)
 static const char *kBundledConfig="bundled.ini",*kProfilesDirectory="profiles";
-static const char *kAssetsFilename="zelda3_assets.dat";
+static const char *kAssetsFilename="zelda3_assets.dat", *kBundledChinesePack="cn.pack";
 static const char *g_profile_prepare_status="ROM preparation failed";
 typedef struct {char filename[256],profile[256];uint32_t hash;} RomEntry;
 '''
-for sig in ['static bool ProfileSetupFailure(', 'static bool IsRegularFile(const char *path) {', 'static bool EnsureDirectory(const char *path) {', 'static char *Trim(', 'static bool CopyFileIfMissing(', 'static bool CopyFileReplacing(const char *source, const char *destination) {', 'static bool MigrateWideDefaults(']:code+=fn(sig)
+for sig in ['static bool ProfileSetupFailure(', 'static bool IsRegularFile(const char *path) {', 'static bool EnsureDirectory(const char *path) {', 'static char *Trim(', 'static bool CopyFileIfMissing(', 'static bool CopyFileReplacing(const char *source, const char *destination) {', 'static bool MigrateWideDefaults(', 'static void LogProfileLanguage(']:code+=fn(sig)
 # Fake the expensive extractor/asset validator only. All storage operations,
 # migration, selection gating and copy ordering are the production functions.
 code+=r'''
+bool ChineseProfile_RecoverFile(const char *p,char *e,size_t n){return true;}
+ChineseProfileResult ChineseProfile_Ensure(const char *a,const char *p,char *e,size_t n){return CN_PROFILE_CURRENT;}
+bool ChineseProfile_SetDefaultLanguage(const char *p,char *e,size_t n){return true;}
 static bool AssetsFileLooksValid(const char *path) {
  FILE *f=fopen(path,"rb");if(!f)return false;
  char magic[6]={0};fread(magic,1,5,f);fclose(f);return !strcmp(magic,"VALID");
@@ -71,7 +75,7 @@ int main(int argc,char **argv) {
 '''
 with tempfile.TemporaryDirectory(prefix='alttp-profile-') as t:
  p=Path(t);(p/'test.c').write_text(code)
- subprocess.run(['cc','-O1','-fsanitize=address,undefined',p/'test.c','-o',p/'test'],check=True)
+ subprocess.run(['cc','-O1','-fsanitize=address,undefined','-I'+str(r/'platform/3ds/source'),p/'test.c','-o',p/'test'],check=True)
  original='[General]\nDisplayMode = Original\nWideEdgeMode = Standard\nWideZoom = 1.5\n[Sound]\nEnableAudio = 0\n'
  bundled='[General]\nDisplayMode = Wide\nWideEdgeMode = FixedCamera\n'
  cases=['normal','missing','recovery','completed','no-general','duplicate','fault1','fault2','fault2+3','fault3','save','unsupported']
