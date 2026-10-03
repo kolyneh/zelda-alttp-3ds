@@ -83,14 +83,15 @@ int Update_ParseRelease(const char *data, size_t size, bool pre, bool homebrew, 
   json_error_t err; json_t *root = json_loadb(data, size, JSON_REJECT_DUPLICATES, &err);
   if (!root) return -1;
   int result = 0;
-  if (!pre) result = candidate(root, false, homebrew, out) ? 1 : -1;
-  else if (!json_is_array(root)) result = -1;
+  if (!json_is_array(root)) result = !pre && candidate(root, false, homebrew, out) ? 1 : -1;
   else {
     size_t i; json_t *o;
     json_array_foreach(root, i, o) {
-      if (!json_is_true(json_object_get(o, "prerelease"))) continue;
+      json_t *channel = json_object_get(o, "prerelease");
+      if (!json_is_boolean(channel)) { result = -1; break; }
+      if (json_is_true(channel) != pre) continue;
       UpdateRelease r;
-      if (!candidate(o, true, homebrew, &r)) { result = -1; break; }
+      if (!candidate(o, pre, homebrew, &r)) { result = -1; break; }
       if (!result || Update_IsNewer(r.version, out->version)) *out = r;
       result = 1;
     }

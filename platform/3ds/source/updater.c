@@ -108,6 +108,9 @@ static int transfer_progress(void *p, curl_off_t total, curl_off_t now, curl_off
   return cancelled() ? 1 : 0;
 }
 static bool fetch(const char *url, Transfer *t) {
+#ifdef ZELDA3_UPDATE_FETCH_HOOK
+  if (ZELDA3_UPDATE_FETCH_HOOK(url, t)) return true;
+#endif
   CURL *c = curl_easy_init(); if (!c) return false;
   curl_easy_setopt(c, CURLOPT_URL, url);
   curl_easy_setopt(c, CURLOPT_USERAGENT, "Zelda-ALttP-3DS/" ZELDA3_3DS_VERSION);
@@ -229,14 +232,13 @@ static void run_job(void *arg) {
   if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) goto done;
   curl_ready = true;
   if (!download_job) {
-    const char *url = s.prerelease ?
-      "https://api.github.com/repos/" UPDATE_REPOSITORY "/releases?per_page=100" :
-      "https://api.github.com/repos/" UPDATE_REPOSITORY "/releases/latest";
+    // The list endpoint returns [] for an unpublished fork in either channel.
+    const char *url = "https://api.github.com/repos/" UPDATE_REPOSITORY "/releases?per_page=100";
     if (!fetch(url, &t)) goto done;
     UpdateRelease candidate;
     int result = Update_ParseRelease(t.data, t.size, s.prerelease, homebrew, &candidate);
     if (result < 0) { publish(UPDATE_ERROR, "INVALID RELEASE DATA"); goto done; }
-    if (!result) { publish(UPDATE_EMPTY, "NO PRE-RELEASE AVAILABLE"); ok = true; goto done; }
+    if (!result) { publish(UPDATE_EMPTY, s.prerelease ? "NO PRE-RELEASE AVAILABLE" : "NO STABLE RELEASE AVAILABLE"); ok = true; goto done; }
     LightLock_Lock(&lock); release = candidate; strcpy(status.version, release.version); LightLock_Unlock(&lock);
     bool newer = Update_IsNewer(release.version, ZELDA3_3DS_VERSION);
     publish(newer ? UPDATE_AVAILABLE : UPDATE_CURRENT, newer ? "UPDATE AVAILABLE" : "YOU ARE UP TO DATE");

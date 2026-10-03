@@ -1,0 +1,104 @@
+name: Build Chinese 3DS fork
+on:
+  push:
+    branches: [master, main, 'feat/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: chinese-3ds-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install host test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libjansson-dev libcurl4-openssl-dev libssl-dev python3-venv
+          python3 -m venv build-3ds/host-venv
+          build-3ds/host-venv/bin/pip install Pillow==12.3.0
+      - name: Prepare and test pinned engine and Chinese resources
+        run: |
+          set -euo pipefail
+          mkdir -p build-3ds/logs
+          {
+            python3 tools/3ds/prepare_engine.py
+            python3 -m unittest discover -s tests -p 'test_3ds_*.py' -v
+            build-3ds/host-venv/bin/python tools/3ds/build_cn_pack.py
+            build-3ds/host-venv/bin/python -m unittest discover -s platform/3ds/tests -p test_chinese_pack.py -v
+            build-3ds/host-venv/bin/python platform/3ds/tests/run_chinese_tests.py
+            python3 platform/3ds/tests/run_chinese_text_test.py
+            python3 platform/3ds/tests/run_chinese_profile_tests.py
+            python3 platform/3ds/tests/run_chinese_profile_boot_test.py
+            python3 platform/3ds/tests/run_profile_boot_test.py
+            python3 platform/3ds/tests/run_runtime_persistence_test.py
+            python3 platform/3ds/tests/run-update-tests.py --jansson-prefix /usr --jansson-library /usr/lib/x86_64-linux-gnu/libjansson.a
+            python3 platform/3ds/tests/run_ppu_gpu_model_test.py
+            python3 platform/3ds/tests/run_ppu_gpu_slots_test.py
+            python3 platform/3ds/tests/run_ppu_gpu_restore_test.py
+            python3 platform/3ds/tests/run_ppu_old3ds_test.py --sanitize
+          } 2>&1 | tee build-3ds/logs/host-tests.log
+      - name: Preserve host test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chinese-3ds-host-logs
+          path: build-3ds/logs
+          if-no-files-found: ignore
+  build:
+    needs: host-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: devkitpro/devkitarm@sha256:116afba8df8453961de2936ffab20dd441edf4d682856c1ec8b0e53d7ed0bbf5
+    env:
+      UPDATE_DEPS_ROOT: ${{ github.workspace }}/build-3ds/update-prefix
+      ZELDA3_TOOLS_ROOT: ${{ github.workspace }}/build-3ds/tools
+      JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install build host dependencies
+        run: |
+          apt-get update
+          apt-get install -y autoconf automake libtool pkg-config python3-pil
+      - name: Fetch verified tools and build updater libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build-3ds/logs
+          {
+            python3 tools/3ds/fetch_build_inputs.py
+            bash tools/3ds/build_update_dependencies.sh
+          } 2>&1 | tee build-3ds/logs/dependencies.log
+      - name: Build 3DSX and CIA
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash platform/3ds/build.sh 2>&1 | tee build-3ds/logs/game-build.log
+          test -s build-3ds/game/zelda3-3ds-v3.2.1.3dsx
+          test -s build-3ds/game/zelda3-3ds-v3.2.1.cia
+      - name: Verify and stage distributable artifacts
+        run: python3 tools/3ds/package_release.py
+      - name: Upload verified packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: zelda3-3ds-v3.2.1-cn
+          path: build-3ds/release
+          if-no-files-found: error
+      - name: Preserve cross-build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chinese-3ds-build-logs
+          path: build-3ds/logs
+          if-no-files-found: ignore

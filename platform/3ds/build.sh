@@ -50,8 +50,8 @@ fi
 
 "${BANNERTOOL}" makesmdh \
   -s "The Legend of Zelda" \
-  -l "A Link to the Past 3DS port" \
-  -p "EstebanPdN" \
+  -l "A Link to the Past - Simplified Chinese fork" \
+  -p "EstebanPdN / kolyneh" \
   -i "${ROOT}/platform/3ds/assets/icon.png" \
   -f visible,nosavebackups \
   -o "${GAME_BUILD}/zelda3-3ds.icn"
@@ -65,7 +65,7 @@ fi
   cd "${ROOT}"
   "${MAKEROM}" \
     -f cia \
-    -o "${GAME_BUILD}/zelda3-3ds-v3.2.cia" \
+    -o "${GAME_BUILD}/zelda3-3ds-v3.2.1.cia" \
     -DAPP_ROMFS=build-3ds/game/romfs \
     -rsf platform/3ds/cia/zelda3.rsf \
     -target t \
@@ -76,5 +76,5 @@ fi
 )
 
 printf 'Listos:\n'
-printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.3dsx"
-printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.cia"
+printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.1.3dsx"
+printf '  %s\n' "${GAME_BUILD}/zelda3-3ds-v3.2.1.cia"
