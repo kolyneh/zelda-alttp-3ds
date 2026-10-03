@@ -102,6 +102,25 @@ class ChinesePackTests(unittest.TestCase):
             self.assertEqual(bytes(encoded), want)
             self.assertEqual(decode_message(encoded, info), info.cjk_chars[index])
 
+    def test_reflow_preserves_words_and_fits_chinese_rows(self):
+        builder = self.builder()
+        codec, lines = builder.load_dialogue(ENGINE)
+        original = [line.split(':', 1)[1].removeprefix(' ') for line in
+                    (ENGINE / 'tables/dialogue_cn.txt').read_text(encoding='utf-8').splitlines()]
+        for a, b in zip(original, lines):
+            self.assertEqual(re.sub(r'\[[123]\]', '', a), re.sub(r'\[[123]\]', '', b))
+        data = builder.build_pack(ENGINE); words = struct.unpack_from('<12I', data, 8)
+        offset = 56 + sum(words[5:8]); punctuation = data[offset:offset+16]
+        offset = 56 + sum(words[5:10]); cjk = data[offset:offset+1118]
+        info = codec.kLanguages['cn']
+        widths = {char: cjk[i] for i, char in enumerate(info.cjk_chars)}
+        widths.update({char: punctuation[i-95] for i, char in enumerate(info.alphabet) if i >= 95})
+        for number, line in enumerate(lines, 1):
+            for row in re.split(r'\[(?:[123]|Scroll)\]', line):
+                row = re.sub(r'\[[^]]*\]', '', row)
+                if row and all(char in widths for char in row):
+                    self.assertLessEqual(sum(widths[char] for char in row), 168, (number, row))
+
     def test_pack_is_deterministic_and_does_not_need_us_font(self):
         builder = self.builder()
         self.assertEqual(builder.build_pack(ENGINE), builder.build_pack(ENGINE))

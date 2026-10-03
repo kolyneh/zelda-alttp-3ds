@@ -12,6 +12,24 @@ import zlib
 ROOT = Path(__file__).resolve().parents[2]
 MAGIC = b'Z3CNPK1\0'
 
+# Keep the pinned translation intact while fitting two authored rows to 168 px.
+LAYOUT_FIXES = {
+    109: ('[2]现在可以打开[3]普通钥匙打不开的门和宝箱了！',
+          '[2]现在可以打开普通钥匙[3]打不开的门和宝箱了！'),
+    165: ('呼噜噜……呼噜噜……（打着响亮的鼾声）',
+          '呼噜噜……呼噜噜……[2]（打着响亮的鼾声）'),
+}
+
+
+def reflow_dialogue(lines):
+    lines = list(lines)
+    for number, (before, after) in LAYOUT_FIXES.items():
+        if before not in lines[number - 1]:
+            raise ValueError(f'Pinned dialogue {number} changed; review its line layout')
+        lines[number - 1] = lines[number - 1].replace(before, after, 1)
+    return lines
+
+
 
 def load_dialogue(engine):
     engine = Path(engine).resolve()
@@ -35,7 +53,7 @@ def load_dialogue(engine):
     info = codec.kLanguages['cn']
     if len(lines) != 397 or len(info.alphabet) != 111 or len(info.cjk_chars) != 1118:
         raise ValueError('Chinese resource counts do not match the pinned format')
-    return codec, lines
+    return codec, reflow_dialogue(lines)
 
 
 def pack_arrays(parts):

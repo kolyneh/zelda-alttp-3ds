@@ -41,3 +41,10 @@ increment contains no US font, US dialogue, ROM or full game asset package.
 
 Translation and font input come from the pinned sxunix dependency. The Ark
 Pixel font is licensed under SIL OFL 1.1; ship `tables/FONT_LICENSE` with it.
+
+## Text layout
+
+The build shifts the row break in message 109 and adds a second row in message
+165. Both source lines exceed the 168-pixel text row. All words are retained;
+the pinned vendor checkout stays unchanged. An independent test checks every
+pure Chinese/punctuation row against the generated advance widths.
