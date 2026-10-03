@@ -11,6 +11,9 @@ TOOLS_ROOT="${ZELDA3_TOOLS_ROOT:-${ROOT}/../../Tools/bin}"
 
 export DEVKITPRO DEVKITARM
 
+PYTHON="${PYTHON:-python3}"
+"${PYTHON}" "${ROOT}/tools/3ds/prepare_engine.py"
+
 if [[ ! -f "${SDL_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" ]]; then
   cmake \
     -S "${ROOT}/app/jni/SDL2" \
@@ -33,6 +36,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DSDL2_ROOT="${SDL_PREFIX}" \
   -DSDL2_DIR="${SDL_PREFIX}/lib/cmake/SDL2" \
+  -DZELDA3_ENGINE_ROOT="${ROOT}/build-3ds/engine" \
   -DUPDATE_DEPS_ROOT="${UPDATE_DEPS_ROOT:-${DEVKITPRO}/portlibs/3ds}"
 cmake --build "${GAME_BUILD}" --parallel
 

@@ -10,7 +10,7 @@ root=Path(__file__).resolve().parents[3]
 p=argparse.ArgumentParser();p.add_argument('dump',type=Path);args=p.parse_args()
 tools=Path(os.environ.get('DEVKITARM','/opt/devkitpro/devkitARM'))/'bin'
 def cbytes(name,b):return 'static const unsigned char '+name+'[]={'+','.join(map(str,b))+'};\n'
-reference=subprocess.check_output(['git','show','b723a0f:app/jni/src/snes/ppu.c'],cwd=root,text=True)
+reference=subprocess.check_output(['git','show','b723a0f:build-3ds/engine/snes/ppu.c'],cwd=root,text=True)
 exports=re.findall(r'^(?:Ppu\*|void|int|uint8_t)\s+((?:ppu_|Ppu)[A-Za-z0-9_]+)\(',reference,re.M)
 loader=(root/'platform/3ds/tests/ppu_old3ds_test.c').read_text()
 start=loader.index('  const unsigned regs[][2]');end=loader.index('  snprintf(path, sizeof(path), "%s/ppu.txt"',start)
@@ -66,9 +66,9 @@ unsigned checksum(void){unsigned h=2166136261u;for(int i=0;i<512*240;i++)h=(h^ou
 '''
 with tempfile.TemporaryDirectory(prefix='lttp-arm-ppu-') as td:
  tmp=Path(td);(tmp/'driver.c').write_text(code);(tmp/'reference.c').write_text(reference)
- common=[str(tools/'arm-none-eabi-gcc'),'-mcpu=mpcore','-marm','-mfpu=vfp','-mfloat-abi=hard','-O3','-ffast-math','-fno-strict-aliasing','-ffunction-sections','-fdata-sections','-D__3DS__','-I'+str(root/'app/jni/src'),'-I'+str(root/'app/jni/src/snes'),'-I'+str(root/'platform/3ds/source')]
+ common=[str(tools/'arm-none-eabi-gcc'),'-mcpu=mpcore','-marm','-mfpu=vfp','-mfloat-abi=hard','-O3','-ffast-math','-fno-strict-aliasing','-ffunction-sections','-fdata-sections','-D__3DS__','-I'+str(root/'build-3ds/engine'),'-I'+str(root/'build-3ds/engine/snes'),'-I'+str(root/'platform/3ds/source')]
  subprocess.run(common+['-D'+s+'=ref_'+s for s in exports]+['-c',str(tmp/'reference.c'),'-o',str(tmp/'ref.o')],check=True)
- subprocess.run(common+[str(tmp/'driver.c'),str(root/'app/jni/src/snes/ppu.c'),str(root/'platform/3ds/source/ppu_gpu_model.c'),str(tmp/'ref.o'),'-nostartfiles','-specs=nosys.specs','-Wl,--gc-sections','-Wl,-Ttext=0x10000','-Wl,-e,run','-Wl,-u,init','-Wl,-u,checksum','-lm','-o',str(tmp/'test.elf')],check=True)
+ subprocess.run(common+[str(tmp/'driver.c'),str(root/'build-3ds/engine/snes/ppu.c'),str(root/'platform/3ds/source/ppu_gpu_model.c'),str(tmp/'ref.o'),'-nostartfiles','-specs=nosys.specs','-Wl,--gc-sections','-Wl,-Ttext=0x10000','-Wl,-e,run','-Wl,-u,init','-Wl,-u,checksum','-lm','-o',str(tmp/'test.elf')],check=True)
  elf=(tmp/'test.elf').read_bytes();uc=Uc(UC_ARCH_ARM,UC_MODE_ARM);uc.mem_map(0x10000,0x2100000)
  off=struct.unpack_from('<I',elf,28)[0];size,count=struct.unpack_from('<HH',elf,42)
  for i in range(count):

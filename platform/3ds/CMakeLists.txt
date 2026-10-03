@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 3.20)
 project(zelda3_3ds VERSION 3.2 LANGUAGES C)
 
 set(ZELDA3_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
-set(ZELDA3_NATIVE "${ZELDA3_ROOT}/app/jni/src")
+set(ZELDA3_ENGINE_ROOT "${ZELDA3_ROOT}/build-3ds/engine" CACHE PATH "Prepared pinned sxunix engine")
+if(NOT EXISTS "${ZELDA3_ENGINE_ROOT}/.engine-origin.json")
+  message(FATAL_ERROR "Prepare the sxunix dependency first: python3 tools/3ds/prepare_engine.py")
+endif()
+set(ZELDA3_NATIVE "${ZELDA3_ENGINE_ROOT}")
 set(SDL2_ROOT "" CACHE PATH "Local SDL2 installation built for Nintendo 3DS")
 
 if(NOT SDL2_ROOT)
