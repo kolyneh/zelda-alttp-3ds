@@ -34,6 +34,8 @@ set(ZELDA3_3DS_SOURCES
   "${ZELDA3_NATIVE}/src/platform/linux/second_screen_sdl.c"
   "${ZELDA3_NATIVE}/third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/platform_3ds.c"
+  "${CMAKE_CURRENT_LIST_DIR}/source/chinese_assets.c"
+  "${CMAKE_CURRENT_LIST_DIR}/source/chinese_profile.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/apt_responsiveness.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/updater.c"
   "${CMAKE_CURRENT_LIST_DIR}/source/update_manifest.c"
@@ -113,6 +115,14 @@ configure_file(
   "${ZELDA3_ROMFS}/zelda3.ini"
   COPYONLY
 )
+
+set(ZELDA3_CHINESE_PACK "${ZELDA3_ROOT}/build-3ds/chinese/zelda3_cn.pack" CACHE FILEPATH "Generated ROM-free Chinese increment")
+if(NOT EXISTS "${ZELDA3_CHINESE_PACK}")
+  message(FATAL_ERROR "Generate the Chinese increment first: python3 tools/3ds/build_cn_pack.py")
+endif()
+configure_file("${ZELDA3_CHINESE_PACK}" "${ZELDA3_ROMFS}/zelda3_cn.pack" COPYONLY)
+configure_file("${ZELDA3_ROOT}/vendor/zelda3/tables/FONT_LICENSE" "${ZELDA3_ROMFS}/chinese-font-notice.txt" COPYONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/chinese-font-OFL.txt" "${ZELDA3_ROMFS}/chinese-font-OFL.txt" COPYONLY)
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/romfs/update-ca.pem" "${ZELDA3_ROMFS}/update-ca.pem" COPYONLY)
 set(ZELDA3_SMDH "${CMAKE_CURRENT_BINARY_DIR}/zelda3-3ds.smdh")

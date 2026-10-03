@@ -13,6 +13,7 @@ export DEVKITPRO DEVKITARM
 
 PYTHON="${PYTHON:-python3}"
 "${PYTHON}" "${ROOT}/tools/3ds/prepare_engine.py"
+"${PYTHON}" "${ROOT}/tools/3ds/build_cn_pack.py"
 
 if [[ ! -f "${SDL_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" ]]; then
   cmake \
