@@ -86,19 +86,22 @@ target_compile_options(zelda3-3ds PRIVATE
 target_link_options(zelda3-3ds PRIVATE -O3 -flto -Wl,--gc-sections -Wl,--wrap=GSPGPU_SetLcdForceBlack -Wl,--wrap=aptInit -Wl,--wrap=threadCreate)
 
 set(UPDATE_DEPS_ROOT "$ENV{DEVKITPRO}/portlibs/3ds" CACHE PATH "3DS curl, mbedTLS and Jansson prefix")
-target_include_directories(zelda3-3ds PRIVATE "${UPDATE_DEPS_ROOT}/include")
-target_link_directories(zelda3-3ds PRIVATE "${UPDATE_DEPS_ROOT}/lib")
+target_include_directories(zelda3-3ds BEFORE PRIVATE "${UPDATE_DEPS_ROOT}/include")
+foreach(LIBRARY curl jansson mbedtls mbedx509 mbedcrypto)
+  find_library(ZELDA3_${LIBRARY}_LIBRARY NAMES ${LIBRARY}
+    PATHS "${UPDATE_DEPS_ROOT}/lib" NO_DEFAULT_PATH REQUIRED)
+endforeach()
 target_link_libraries(zelda3-3ds PRIVATE
   SDL2::SDL2main
   SDL2::SDL2-static
   alttp_pica_shader_bin
   citro2d
   citro3d
-  curl
-  jansson
-  mbedtls
-  mbedx509
-  mbedcrypto
+  ${ZELDA3_curl_LIBRARY}
+  ${ZELDA3_jansson_LIBRARY}
+  ${ZELDA3_mbedtls_LIBRARY}
+  ${ZELDA3_mbedx509_LIBRARY}
+  ${ZELDA3_mbedcrypto_LIBRARY}
   ctru
   m
 )

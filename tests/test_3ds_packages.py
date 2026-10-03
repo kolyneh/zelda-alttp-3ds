@@ -2,7 +2,9 @@ import hashlib
 import importlib.util
 from pathlib import Path
 import struct
+import tempfile
 import unittest
+from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPT=ROOT/'tools/3ds/package_release.py'
 
@@ -16,8 +18,8 @@ def romfs_fixture(files):
     root=struct.pack('<6I',0,0xffffffff,0xffffffff,0,0xffffffff,0)
     return header+bytes(4)+root+bytes(4)+table+data
 
-def cia_fixture(title):
-    raw=romfs_fixture({'test.txt':b'payload'})
+def cia_fixture(title, files=None):
+    raw=romfs_fixture(files if files is not None else {'test.txt':b'payload'})
     ivfc=bytearray(4096);ivfc[:4]=b'IVFC';struct.pack_into('<I',ivfc,8,32);struct.pack_into('<Q',ivfc,0x44,len(raw));struct.pack_into('<I',ivfc,0x4c,12)
     romfs=ivfc+raw
     ncch=bytearray(0x400+len(romfs));ncch[:]=ncch # explicit bytearray fixture
@@ -49,3 +51,21 @@ class PackageTests(unittest.TestCase):
         m=self.module()
         for name in ('game.sfc','zelda3_assets.dat'):
             with self.assertRaises(ValueError):m.verify_files({name:b'private input'}, {})
+    def test_stage_includes_real_engine_license_and_checksums(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);game=root/'build-3ds/game';romfs=game/'romfs';romfs.mkdir(parents=True)
+            files={name:name.encode() for name in m.ALLOWED}
+            for name,data in files.items():(romfs/name).write_bytes(data)
+            x=bytearray(44);x[:4]=b'3DSX';struct.pack_into('<H',x,4,44);struct.pack_into('<I',x,40,44)
+            (game/f'zelda3-3ds-v{m.VERSION}.3dsx').write_bytes(x+romfs_fixture(files))
+            (game/f'zelda3-3ds-v{m.VERSION}.cia').write_bytes(cia_fixture(m.TITLE_ID,files))
+            for name in ('engine.lock.json','build-tools.lock.json'):
+                path=root/'platform/3ds'/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('{}')
+            for source in m.RELEASE_LICENSES.values():
+                license_path=root/source;license_path.parent.mkdir(parents=True,exist_ok=True);license_path.write_text('MIT notice')
+            with patch.object(m,'ROOT',root),patch.object(m.subprocess,'check_output',return_value='abc\n'):m.main()
+            release=root/'build-3ds/release'
+            self.assertEqual((release/'engine-LICENSE.txt').read_text(),'MIT notice')
+            for line in (release/'SHA256SUMS').read_text().splitlines():
+                digest,name=line.split('  ');self.assertEqual(digest,hashlib.sha256((release/name).read_bytes()).hexdigest())

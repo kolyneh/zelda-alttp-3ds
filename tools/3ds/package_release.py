@@ -12,6 +12,13 @@ TITLE_ID = 0x0004000005A13E00
 VERSION = '3.2.1'
 ALLOWED = {'zelda3_assets.bps', 'zelda3.ini', 'zelda3_cn.pack',
            'chinese-font-notice.txt', 'chinese-font-OFL.txt', 'update-ca.pem'}
+RELEASE_LICENSES = {
+    'engine-LICENSE.txt': 'vendor/zelda3/LICENSE.txt',
+    'SDL2-LICENSE.txt': 'app/jni/SDL2/LICENSE.txt',
+    'curl-LICENSE.txt': 'platform/3ds/update-dependencies/LICENSE-curl.txt',
+    'mbedTLS-LICENSE.txt': 'platform/3ds/update-dependencies/LICENSE-mbedTLS.txt',
+    'Jansson-LICENSE.txt': 'platform/3ds/update-dependencies/LICENSE-Jansson.txt',
+}
 
 
 def part(data, offset, size):
@@ -117,7 +124,8 @@ def main():
     release.mkdir(parents=True)
     for package in packages:
         shutil.copy2(package, release)
-    shutil.copy2(ROOT / 'vendor/zelda3/LICENSE.txt', release / 'engine-LICENSE.txt')
+    for output, source in RELEASE_LICENSES.items():
+        shutil.copy2(ROOT / source, release / output)
     for name in ('chinese-font-notice.txt', 'chinese-font-OFL.txt'):
         (release / name).write_bytes(expected[name])
     metadata = {

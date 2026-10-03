@@ -20,6 +20,11 @@ static void init(void) {
   put16(font_pack + sizeof(font_pack) - 2, 8193);
   g_zenv.dialogue_font_blk = (MemBlk){font_pack, sizeof(font_pack)};
   g_zenv.dialogue_flags = 7;
+  for (unsigned c = 0x74; c <= 0x7e; c++)
+    assert(TEXTCMD_CMD(Text_DecodeCmd(c, NULL)) == kTextCmd_EndMessage);
+  g_zenv.dialogue_flags = 1;
+  assert(TEXTCMD_PARAM(Text_DecodeCmd(0x74, NULL)) == 0x74);
+  g_zenv.dialogue_flags = 7;
 }
 static void expect_pixels(unsigned start, unsigned width) {
   uint8 expected[4096] = {0};
