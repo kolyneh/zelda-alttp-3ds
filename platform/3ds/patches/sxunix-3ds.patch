@@ -1188,7 +1188,7 @@ index 5b79153..9dbf788 100644
 +void PpuSetWindow1Ext(Ppu *ppu, const int16_t *left, const int16_t *right);
  
  #endif  // ZELDA3_SNES_PPU_H_
-diff --git a/adapted/snes/ppu_bg_span.h b/snes/ppu_bg_span.h
+diff --git a/build-3ds/patch-work/adapted/snes/ppu_bg_span.h b/snes/ppu_bg_span.h
 new file mode 100644
 index 0000000..138ee7b
 --- /dev/null
@@ -1242,7 +1242,7 @@ index 0000000..138ee7b
 +  if (unaligned && z > dst[6]) dst[6] = z + (pixels & 15);
 +}
 +#endif
-diff --git a/adapted/snes/ppu_retained.h b/snes/ppu_retained.h
+diff --git a/build-3ds/patch-work/adapted/snes/ppu_retained.h b/snes/ppu_retained.h
 new file mode 100644
 index 0000000..ab72d2a
 --- /dev/null
@@ -1351,7 +1351,7 @@ index 0000000..ab72d2a
 +  if(n&1) {unsigned i=n-1;if((src[i]&mask)>dst[i])dst[i]=src[i];}
 +}
 +#endif
-diff --git a/adapted/src/android_logging.h b/src/android_logging.h
+diff --git a/build-3ds/patch-work/adapted/src/android_logging.h b/src/android_logging.h
 new file mode 100644
 index 0000000..99c3c3a
 --- /dev/null
@@ -1508,7 +1508,7 @@ index ab0809a..9616574 100644
  int FindCmdForGamepadButton(int button, uint32 modifiers);
 +void GamepadMap_GetControls(uint8 *out);
 +void GamepadMap_SetControls(const uint8 *btns);
-diff --git a/adapted/src/dump_state.c b/src/dump_state.c
+diff --git a/build-3ds/patch-work/adapted/src/dump_state.c b/src/dump_state.c
 new file mode 100644
 index 0000000..325eae0
 --- /dev/null
@@ -1844,7 +1844,7 @@ index 0000000..325eae0
 +  ok = !ferror(out) && ok;
 +  return fclose(out) == 0 && ok;
 +}
-diff --git a/adapted/src/dump_state.h b/src/dump_state.h
+diff --git a/build-3ds/patch-work/adapted/src/dump_state.h b/src/dump_state.h
 new file mode 100644
 index 0000000..80168b0
 --- /dev/null
@@ -3056,7 +3056,7 @@ index 9d5951a..82dd529 100644
  MemBlk FindInAssetArray(int asset, int idx) {
    return FindIndexInMemblk((MemBlk) { g_asset_ptrs[asset], g_asset_sizes[asset] }, idx);
 diff --git a/src/messaging.c b/src/messaging.c
-index 28036d8..5449940 100644
+index 28036d8..38a83ee 100644
 --- a/src/messaging.c
 +++ b/src/messaging.c
 @@ -233,6 +233,10 @@ uint8 GetOtherDungmapInfo(int count) {
@@ -3090,15 +3090,272 @@ index 28036d8..5449940 100644
      TM_copy = 16;
      player_is_indoors = 0;
      Death_Func31();
-@@ -2523,7 +2529,7 @@ void VWF_RenderSingle(int c) {  // 8ecab8
+@@ -2195,7 +2201,7 @@ enum {
+   kTextCmd_EU_2 = 0x83,       // frequency 496
+   kTextCmd_EU_3 = 0x84,       // frequency 347
+   kTextCmd_EU_Name = 0x85,    // frequency 64
+-  kTextCmd_EU_Rest = 0x87,    
++  kTextCmd_EU_Rest = 0x87,
+ };
+ 
+ #define TEXTCMD_MULTIBYTE(a) ((a) & 1)
+@@ -2213,7 +2219,7 @@ uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
+     assert(a < 0x80);
+     static const uint8 kText_CommandLengths_US[] = { 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
+     if (kText_CommandLengths_US[a - kTextCommandStart_US])
+-      return TEXTCMD_MK(*src, a - kTextCommandStart_US, 1);
++      return src ? TEXTCMD_MK(*src, a - kTextCommandStart_US, 1) : TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     else
+       return TEXTCMD_MK(0, a - kTextCommandStart_US, 0);
+   } else {
+@@ -2221,7 +2227,9 @@ uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
+     // Chinese escape prefixes: 0x6F-0x73 encode CJK characters
+     // Each prefix byte followed by 1 index byte: char = alphabet_size + (prefix-0x6F)*256 + next_byte
+     if ((g_zenv.dialogue_flags & 4) && a >= 0x6F && a <= 0x73)
+-      return TEXTCMD_MK(111 + (a - 0x6F) * 256 + *src, kTextCmd_IsLetter, 1);
++      return src && 111 + (a - 0x6F) * 256 + *src < 1229 ?
++          TEXTCMD_MK(111 + (a - 0x6F) * 256 + *src, kTextCmd_IsLetter, 1) :
++          TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     if (a < 0x7f)
+       return TEXTCMD_MK(a, kTextCmd_IsLetter, 0);
+     static const uint8 kSoundLut[] = {45};
+@@ -2237,13 +2245,15 @@ uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
+     };
+     if (a < kTextCmd_EU_Rest)
+       return kReturns_Simple[a - 0x7f];
++    if (!src)
++      return TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     a = *src;
+     switch (a >> 4) {
+     case 0: return TEXTCMD_MK(a & 0xF, kTextCmd_Wait, 1);
+     case 1: return TEXTCMD_MK(a & 0xF, kTextCmd_Color, 1);
+     case 2: return TEXTCMD_MK(a & 0xF, kTextCmd_Number, 1);
+     case 3: return TEXTCMD_MK(a & 0xF, kTextCmd_Speed, 1);
+-    case 4: return TEXTCMD_MK(kSoundLut[a & 0xF], kTextCmd_Sound, 1);
++    case 4: return (a & 0xF) == 0 ? TEXTCMD_MK(kSoundLut[0], kTextCmd_Sound, 1) : TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     case 8: {
+       static const uint8 kReturns_Ext[] = {
+         TEXTCMD_MK(0, kTextCmd_Choose, 1),
+@@ -2256,11 +2266,10 @@ uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
+         TEXTCMD_MK(0, kTextCmd_Position, 1),
+         TEXTCMD_MK(1, kTextCmd_Position, 1),
+       };
+-      return kReturns_Ext[a - 0x80];
++      return a <= 0x88 ? kReturns_Ext[a - 0x80] : TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     }
+     default:
+-      assert(0);
+-      return TEXTCMD_MK(26, kTextCmd_IsLetter, 0);
++      return TEXTCMD_MK(0, kTextCmd_EndMessage, 0);
+     }
+   }
+ }
+@@ -2270,19 +2279,25 @@ void Text_LoadCharacterBuffer() {  // 8ec4e2
+   MemBlk dictionary = FindIndexInMemblk(g_zenv.dialogue_blk, 0);
+   MemBlk dialogue = FindIndexInMemblk(g_zenv.dialogue_blk, 1);
+   MemBlk text_str = FindIndexInMemblk(dialogue, dialogue_message_index);
+-  const uint8 *src = text_str.ptr, *src_end = src + text_str.size, *src_org = src;
++  const uint8 *src = text_str.ptr, *src_end = src ? src + text_str.size : src;
+   uint8 *dst = messaging_text_buffer;
+-  while (src < src_end) {
++  // Reserve the terminator before the next RAM allocation at 0x11fc0.
++  uint8 *dst_end = messaging_text_buffer + 0xdc0 - 1;
++  while (src && src < src_end && dst_end - dst >= 6) {
+     uint8 c = *src++;
+     if (c >= kTextDictBase) {
+       MemBlk blk = FindIndexInMemblk(dictionary, c - kTextDictBase);
+-      memcpy(dst, blk.ptr, blk.size);
++      if (blk.size > (size_t)(dst_end - dst))
++        break;
++      if (blk.size) memcpy(dst, blk.ptr, blk.size);
+       dst += blk.size;
+       continue;
+     }
+     // Decode the next byte or multibyte character (in case we support that in the future)
+     // This is dependent on the current language cause US / PAL encode commands differently
+-    uint32 cmd = Text_DecodeCmd(c, src);
++    uint32 cmd = Text_DecodeCmd(c, src < src_end ? src : NULL);
++    if (TEXTCMD_CMD(cmd) == kTextCmd_EndMessage)
++      break;
+     switch (TEXTCMD_CMD(cmd)) {
+     case kTextCmd_Name: dst = Text_WritePlayerName(dst); break;
+     case kTextCmd_Window:  // RenderText_ExtendedCommand_SetWindowType
+@@ -2290,12 +2305,14 @@ void Text_LoadCharacterBuffer() {  // 8ec4e2
+       break;
+     case kTextCmd_Number: {  // Text_WritePreloadedNumber
+       uint8 t = TEXTCMD_PARAM(cmd);
++      if (t >= 16) break;
+       uint8 v = dialogue_number[t >> 1];
+       *dst++ = 0x34 + ((t & 1) ? v >> 4 : v & 0xf);
+       break;
+     }
+     case kTextCmd_Position:
+-      text_msgbox_topleft = kText_Positions[TEXTCMD_PARAM(cmd)];
++      if (TEXTCMD_PARAM(cmd) < 2)
++        text_msgbox_topleft = kText_Positions[TEXTCMD_PARAM(cmd)];
+       break;
+     case kTextCmd_Color:
+       text_tilemap_cur = ((0x387F & 0xe300) | 0x180) | (TEXTCMD_PARAM(cmd) << 10) & 0x3c00;
+@@ -2310,15 +2327,16 @@ void Text_LoadCharacterBuffer() {  // 8ec4e2
+     src += TEXTCMD_MULTIBYTE(cmd);
+   }
+   *dst = 0x7f;
+-  dialogue_msg_read_pos = 0;
++  memset(&dialogue_msg_read_pos, 0, sizeof(dialogue_msg_read_pos));
+ }
+ 
+ uint8 *Text_WritePlayerName(uint8 *p) {  // 8ec5b3
+   uint8 slot = srm_var1;
++  if (slot < 2 || slot > 6 || (slot & 1)) return p;
+   int offs = ((slot>>1) - 1) * 0x500;
+   for (int i = 0; i < 6; i++) {
+     uint8 *pp = &g_zenv.sram[0x3d9 + offs + i * 2];
+-    uint16 a = WORD(*pp);
++    uint16 a = pp[0] | (uint16)pp[1] << 8;
+     p[i] = Text_FilterPlayerNameCharacters(a & 0xf | (a >> 1) & 0xf0);
+   }
+   int i = 6;
+@@ -2519,6 +2537,7 @@ void VWF_RenderSingle(int c) {  // 8ecab8
+   vwf_line_speed_cur = vwf_line_speed;
+ 
+   if (vwf_flag_next_line) {
++    if (vwf_curline > 4) return;
+     vwf_line_ptr = kVWF_RenderCharacter_renderPos[vwf_curline>>1];
      vwf_var1 = kVWF_RenderCharacter_linePositions[vwf_curline>>1];
      vwf_flag_next_line = 0;
+@@ -2530,19 +2549,24 @@ void VWF_RenderSingle(int c) {  // 8ecab8
+     return;
    }
+ 
+-  const uint8 *kFontData = FindIndexInMemblk(g_zenv.dialogue_font_blk, 0).ptr;
+-  uint8 width = FindIndexInMemblk(g_zenv.dialogue_font_blk, 1).ptr[c];
+-  assert(width <= 8);
++  MemBlk font = FindIndexInMemblk(g_zenv.dialogue_font_blk, 0);
++  MemBlk widths = FindIndexInMemblk(g_zenv.dialogue_font_blk, 1);
++  if (c < 0 || c >= 128 || (size_t)c >= widths.size || font.size < 4096) return;
++  const uint8 *kFontData = font.ptr;
++  uint8 width = widths.ptr[c];
++  if (!width || width > 8 || vwf_var1 >= 0xbf || vwf_line_ptr > 0x540 ||
++      vwf_arr[vwf_var1] > 168 - width) return;
+ 
+   int i = vwf_var1++;
+   uint8 arrval = vwf_arr[i];
+   vwf_arr[i + 1] = arrval + width;
+   uint16 r10 = (c & 0x70) * 2 + (c & 0xf);
+   uint16 r0 = arrval * 2;
+-  const uint16 *src2 = (uint16*)(kFontData + r10 * 16);
++  const uint8 *src2 = kFontData + r10 * 16;
+   uint8 *mbuf = (uint8 *)messaging_buf;
+   for (int i = 0; i != 16; i += 2) {
+-    uint16 r4 = *src2++;
++    uint16 r4 = src2[0] | (uint16)src2[1] << 8;
++    src2 += 2;
+     int y = r0 + vwf_line_ptr;
+     int x = (y & 0xff0) + i;
+     y = (y >> 1) & 7;
+@@ -2564,9 +2588,10 @@ void VWF_RenderSingle(int c) {  // 8ecab8
+       WORD(mbuf[x + 0]) = r4;
+   }
+   uint16 r8 = vwf_line_ptr + 0x150;
+-  const uint16 *src3 = (uint16*)(kFontData + (r10 + 16) * 16);
++  const uint8 *src3 = kFontData + (r10 + 16) * 16;
+   for (int i = 0; i != 16; i += 2) {
+-    uint16 r4 = *src3++;
++    uint16 r4 = src3[0] | (uint16)src3[1] << 8;
++    src3 += 2;
+     int y = r8 + r0;
+     int x = (y & 0xff0) + i;
+     y = (y >> 1) & 7;
+@@ -2593,58 +2618,23 @@ void VWF_RenderSingle(int c) {  // 8ecab8
+ // Used by VWF_RenderChinese to render each 8-pixel-wide column of a 16x16 CJK char.
+ static void VWF_RenderHalf(const uint8 *tile_top, const uint8 *tile_bot, int width) {
+   int i = vwf_var1++;
+-  uint8 arrval = vwf_arr[i];
+-  vwf_arr[i + 1] = arrval + width;
+-  uint16 r0 = arrval * 2;
++  unsigned start = vwf_arr[i];
++  vwf_arr[i + 1] = start + width;
+   uint8 *mbuf = (uint8 *)messaging_buf;
 -
-+
-   // Chinese CJK characters (char index >= 111) use 16x16 rendering
-   if ((g_zenv.dialogue_flags & 4) && c >= 111) {
-     VWF_RenderChinese(c - 111);
+-  // Top 8 rows
+-  const uint16 *src_top = (const uint16 *)tile_top;
+-  for (int row = 0; row < 16; row += 2) {
+-    uint16 r4 = *src_top++;
+-    int y = r0 + vwf_line_ptr;
+-    int x = (y & 0xff0) + row;
+-    y = (y >> 1) & 7;
+-    uint8 r3 = width;
+-    do {
+-      if (r4 & 0x0080)
+-        mbuf[x + 0] ^= kVWF_RenderCharacter_setMasks[y];
+-      else
+-        mbuf[x + 0] &= ~kVWF_RenderCharacter_setMasks[y];
+-      if (r4 & 0x8000)
+-        mbuf[x + 1] ^= kVWF_RenderCharacter_setMasks[y];
+-      else
+-        mbuf[x + 1] &= ~kVWF_RenderCharacter_setMasks[y];
+-      r4 = (r4 & ~0x8080) << 1;
+-    } while (--r3 && ++y != 8);
+-    x += 16;
+-    if (r4 != 0)
+-      WORD(mbuf[x + 0]) = r4;
+-  }
+-
+-  // Bottom 8 rows
+-  uint16 r8 = vwf_line_ptr + 0x150;
+-  const uint16 *src_bot = (const uint16 *)tile_bot;
+-  for (int row = 0; row < 16; row += 2) {
+-    uint16 r4 = *src_bot++;
+-    int y = r8 + r0;
+-    int x = (y & 0xff0) + row;
+-    y = (y >> 1) & 7;
+-    uint8 r3 = width;
+-    do {
+-      if (r4 & 0x0080)
+-        mbuf[x + 0] ^= kVWF_RenderCharacter_setMasks[y];
+-      else
+-        mbuf[x + 0] &= ~kVWF_RenderCharacter_setMasks[y];
+-      if (r4 & 0x8000)
+-        mbuf[x + 1] ^= kVWF_RenderCharacter_setMasks[y];
+-      else
+-        mbuf[x + 1] &= ~kVWF_RenderCharacter_setMasks[y];
+-      r4 = (r4 & ~0x8080) << 1;
+-    } while (--r3 && ++y != 8);
+-    x += 16;
+-    if (r4 != 0)
+-      WORD(mbuf[x + 0]) = r4;
++  for (unsigned row = 0; row < 16; row++) {
++    const uint8 *tile = row < 8 ? tile_top : tile_bot;
++    for (unsigned col = 0; col < (unsigned)width; col++) {
++      unsigned pixel = start + col;
++      unsigned origin = vwf_line_ptr + (row < 8 ? 0 : 0x150) + pixel * 2;
++      unsigned offset = (origin & 0xff0) + (row & 7) * 2;
++      uint8 mask = 0x80 >> (pixel & 7);
++      for (unsigned plane = 0; plane < 2; plane++) {
++        if (tile[(row & 7) * 2 + plane] & (0x80 >> col))
++          mbuf[offset + plane] ^= mask;
++        else
++          mbuf[offset + plane] &= ~mask;
++      }
++    }
+   }
+ }
+ 
+@@ -2652,9 +2642,13 @@ void VWF_RenderChinese(int c) {
+   // CJK font data starts at offset 4096 in the font blob (after 256 standard 8x16 tiles).
+   // Each CJK char is 64 bytes: TL(16B) + TR(16B) + BL(16B) + BR(16B).
+   MemBlk font_blk = FindIndexInMemblk(g_zenv.dialogue_font_blk, 0);
+-  const uint8 *cjk_base = font_blk.ptr + 4096 + c * 64;
+   MemBlk width_blk = FindIndexInMemblk(g_zenv.dialogue_font_blk, 1);
++  if (c < 0 || c >= 1118 || (size_t)(111 + c) >= width_blk.size ||
++      font_blk.size < 4096 + ((size_t)c + 1) * 64) return;
++  const uint8 *cjk_base = font_blk.ptr + 4096 + (size_t)c * 64;
+   uint8 total_width = width_blk.ptr[111 + c];
++  if (!total_width || total_width > 13 || vwf_var1 >= 0xbe ||
++      vwf_line_ptr > 0x540 || vwf_arr[vwf_var1] > 168 - total_width) return;
+ 
+   // Render left half (TL + BL), 8 pixels wide
+   uint8 left_width = (total_width > 8) ? 8 : total_width;
 diff --git a/src/messaging.h b/src/messaging.h
 index e4761e8..e6588ea 100644
 --- a/src/messaging.h
@@ -3302,7 +3559,7 @@ index 8038f9d..3f55e91 100644
      int filter = g_config.linear_filtering ? GL_LINEAR : GL_NEAREST;
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-diff --git a/adapted/src/platform/android/second_screen_jni.c b/src/platform/android/second_screen_jni.c
+diff --git a/build-3ds/patch-work/adapted/src/platform/android/second_screen_jni.c b/src/platform/android/second_screen_jni.c
 new file mode 100644
 index 0000000..2bd11ea
 --- /dev/null
@@ -3453,7 +3710,7 @@ index 0000000..2bd11ea
 +  for (int i = 0; i < 12; i++) tmp[i] = buf[i];
 +  SS_SetGamepadControls(tmp);
 +}
-diff --git a/adapted/src/platform/android/second_screen_sdl_stub.c b/src/platform/android/second_screen_sdl_stub.c
+diff --git a/build-3ds/patch-work/adapted/src/platform/android/second_screen_sdl_stub.c b/src/platform/android/second_screen_sdl_stub.c
 new file mode 100644
 index 0000000..54cb130
 --- /dev/null
@@ -3473,7 +3730,7 @@ index 0000000..54cb130
 +}
 +void SecondScreenSDL_RequestDump(void) {}
 +void SecondScreenSDL_Shutdown(void) {}
-diff --git a/adapted/src/platform/linux/bottom_hearts.h b/src/platform/linux/bottom_hearts.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/bottom_hearts.h b/src/platform/linux/bottom_hearts.h
 new file mode 100644
 index 0000000..e6c74df
 --- /dev/null
@@ -3554,7 +3811,7 @@ index 0000000..e6c74df
 +  return changed;
 +}
 +#endif
-diff --git a/adapted/src/platform/linux/second_screen_sdl.c b/src/platform/linux/second_screen_sdl.c
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/second_screen_sdl.c b/src/platform/linux/second_screen_sdl.c
 new file mode 100644
 index 0000000..9309ff9
 --- /dev/null
@@ -6451,7 +6708,7 @@ index 0000000..9309ff9
 +  SDL_DestroyRenderer(ss_r); ss_r = NULL;
 +  SDL_DestroyWindow(ss_win); ss_win = NULL;
 +}
-diff --git a/adapted/src/platform/linux/second_screen_shapes.h b/src/platform/linux/second_screen_shapes.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/second_screen_shapes.h b/src/platform/linux/second_screen_shapes.h
 new file mode 100644
 index 0000000..36f5944
 --- /dev/null
@@ -6493,7 +6750,7 @@ index 0000000..36f5944
 +  if (count) SDL_RenderFillRects(renderer, spans, count);
 +}
 +#endif
-diff --git a/adapted/src/platform/linux/second_screen_texture.h b/src/platform/linux/second_screen_texture.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/second_screen_texture.h b/src/platform/linux/second_screen_texture.h
 new file mode 100644
 index 0000000..79b2bab
 --- /dev/null
@@ -6541,7 +6798,7 @@ index 0000000..79b2bab
 +  return texture;
 +}
 +#endif
-diff --git a/adapted/src/platform/linux/ss_sheets.h b/src/platform/linux/ss_sheets.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/ss_sheets.h b/src/platform/linux/ss_sheets.h
 new file mode 100644
 index 0000000..7d1ca79
 --- /dev/null
@@ -6644,7 +6901,7 @@ index 0000000..7d1ca79
 +#define SS_GLYPH_MBAR_EMPTY 37
 +
 +static const unsigned char kSS_LetterCell[26] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
-diff --git a/adapted/src/platform/linux/ss_tex_triforce.h b/src/platform/linux/ss_tex_triforce.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/ss_tex_triforce.h b/src/platform/linux/ss_tex_triforce.h
 new file mode 100644
 index 0000000..346818b
 --- /dev/null
@@ -7002,7 +7259,7 @@ index 0000000..346818b
 +0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,0x2affffff,
 +0x2affffff,0x2affffff,0x2affffff,0x2affffff
 +};
-diff --git a/adapted/src/platform/linux/ss_textures.h b/src/platform/linux/ss_textures.h
+diff --git a/build-3ds/patch-work/adapted/src/platform/linux/ss_textures.h b/src/platform/linux/ss_textures.h
 new file mode 100644
 index 0000000..7fcad1b
 --- /dev/null
@@ -7903,7 +8160,7 @@ index 0000000..7fcad1b
 +0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c,
 +0xff464e5c,0xff464e5c,0xff464e5c,0xff464e5c
 +};
-diff --git a/adapted/src/second_screen.c b/src/second_screen.c
+diff --git a/build-3ds/patch-work/adapted/src/second_screen.c b/src/second_screen.c
 new file mode 100644
 index 0000000..584985c
 --- /dev/null
@@ -8743,7 +9000,7 @@ index 0000000..584985c
 +    }
 +  }
 +}
-diff --git a/adapted/src/second_screen_tables.h b/src/second_screen_tables.h
+diff --git a/build-3ds/patch-work/adapted/src/second_screen_tables.h b/src/second_screen_tables.h
 new file mode 100644
 index 0000000..6f556e8
 --- /dev/null
@@ -8837,7 +9094,7 @@ index 0000000..6f556e8
 +  0x2490, 0x3490, 0x2491, 0x3491, 0x2492, 0x3492, 0x2493, 0x3493, 0x2494, 0x3494, 0x2495, 0x3495, 0x2496, 0x3496, 0x2497, 0x3497, 0x2498, 0x3498, 0x2499, 0x3499, 0x24a0, 0x24a1, 0x24a2, 0x3ca8, 0x2c88, 0x2c89, 0x20a7, 0x20a9, 0x2871, 0x28f7, 0x2851, 0x28fa, 0x3c5e, 0x3c5f, 0x3c4c, 0x3c4d, 0x3c4e, 0x3cf5
 +};
 diff --git a/src/util.c b/src/util.c
-index 106ec7e..af91cd2 100644
+index 106ec7e..9f03c1b 100644
 --- a/src/util.c
 +++ b/src/util.c
 @@ -2,6 +2,7 @@
@@ -8935,7 +9192,37 @@ index 106ec7e..af91cd2 100644
  char *NextLineStripComments(char **s) {
    char *p = *s;
    if (p == NULL)
-diff --git a/adapted/src/wide_camera.c b/src/wide_camera.c
+@@ -172,22 +242,24 @@ void ByteArray_AppendByte(ByteArray *arr, uint8 v) {
+ }
+ 
+ // Automatically selects between 16 or 32 bit indexes. Can hold up to 8192 elements in 16-bit mode.
++static uint16 ReadLe16(const uint8 *p) { return p[0] | (uint16)p[1] << 8; }
++static uint32 ReadLe32(const uint8 *p) { return ReadLe16(p) | (uint32)ReadLe16(p + 2) << 16; }
+ MemBlk FindIndexInMemblk(MemBlk data, size_t i) {
+   if (data.size < 2)
+     return (MemBlk) { 0, 0 };
+   size_t end = data.size - 2, left_off, right_off;
+-  size_t mx = *(uint16 *)(data.ptr + end);
++  size_t mx = ReadLe16(data.ptr + end);
+   if (mx < 8192) {
+     if (i > mx || mx * 2 > end)
+       return (MemBlk) { 0, 0 };
+-    left_off = ((i == 0) ? mx * 2 : mx * 2 + *(uint16 *)(data.ptr + i * 2 - 2));
+-    right_off = (i == mx) ? end : mx * 2 + *(uint16 *)(data.ptr + i * 2);
++    left_off = ((i == 0) ? mx * 2 : mx * 2 + ReadLe16(data.ptr + i * 2 - 2));
++    right_off = (i == mx) ? end : mx * 2 + ReadLe16(data.ptr + i * 2);
+   } else {
+     mx -= 8192;
+     if (i > mx || mx * 4 > end)
+       return (MemBlk) { 0, 0 };
+-    left_off = ((i == 0) ? mx * 4 : mx * 4 + *(uint32 *)(data.ptr + i * 4 - 4));
+-    right_off = (i == mx) ? end : mx * 4 + *(uint32 *)(data.ptr + i * 4);
++    left_off = ((i == 0) ? mx * 4 : mx * 4 + ReadLe32(data.ptr + i * 4 - 4));
++    right_off = (i == mx) ? end : mx * 4 + ReadLe32(data.ptr + i * 4);
+   }
+   if (left_off > right_off || right_off > end)
+     return (MemBlk) { 0, 0 };
+diff --git a/build-3ds/patch-work/adapted/src/wide_camera.c b/src/wide_camera.c
 new file mode 100644
 index 0000000..9170c67
 --- /dev/null
@@ -9007,7 +9294,7 @@ index 0000000..9170c67
 +    RoundedDivide(offset_delta * progress, distance);
 +  return logical_x - offset;
 +}
-diff --git a/adapted/src/wide_camera.h b/src/wide_camera.h
+diff --git a/build-3ds/patch-work/adapted/src/wide_camera.h b/src/wide_camera.h
 new file mode 100644
 index 0000000..ba1ae99
 --- /dev/null

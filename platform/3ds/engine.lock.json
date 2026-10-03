@@ -5,7 +5,7 @@
   "patches": [
     {
       "path": "platform/3ds/patches/sxunix-3ds.patch",
-      "sha256": "c3954aafe07570ea9c37acbfe7fc4aaa5377cd62a3f53334aba820b52c2934e7"
+      "sha256": "445e0def1753154ae2f0fe92ef7735aaad93bf9180d1b258c642b63bdb265faa"
     }
   ]
 }
